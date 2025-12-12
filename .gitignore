@@ -15,6 +15,9 @@ serviceAccountKey.json
 
 # n8n workflows (contain sensitive data)
 n8n/
+
+# Scripts with credentials
+scripts/
 *-debug.log
 
 # IDE
