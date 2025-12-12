@@ -1,6 +1,6 @@
 /**
  * Firebase Configuration
- * AI Workforce Nexus Dashboard
+ * AI Workforce Fhinck Dashboard
  *
  * Replace the placeholder values with your Firebase project credentials.
  * Get these from: Firebase Console > Project Settings > General > Your Apps

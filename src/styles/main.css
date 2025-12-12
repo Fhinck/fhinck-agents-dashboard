@@ -1,5 +1,5 @@
 /* ===================================
-   AI Workforce Nexus - Main Styles
+   AI Workforce Fhinck - Main Styles
    =================================== */
 
 /* CSS Variables */
@@ -191,6 +191,15 @@ body {
   background:
     radial-gradient(ellipse at center, rgba(255, 107, 53, 0.03) 0%, transparent 70%),
     var(--color-bg-dark);
+  cursor: grab;
+}
+
+.canvas-area.panning {
+  cursor: grabbing;
+}
+
+.canvas-area.focusing {
+  cursor: default;
 }
 
 .connections-layer {
@@ -201,6 +210,7 @@ body {
   height: 100%;
   pointer-events: none;
   z-index: 1;
+  transform-origin: 0 0;
 }
 
 .agents-layer {
@@ -210,6 +220,17 @@ body {
   width: 100%;
   height: 100%;
   z-index: 2;
+  transform-origin: 0 0;
+}
+
+/* Smooth transition when zooming to focus */
+.connections-layer.zoomed {
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  opacity: 0.3;
+}
+
+.agents-layer.zoomed {
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===================================
@@ -217,16 +238,28 @@ body {
    =================================== */
 
 .connection-line {
-  stroke: rgba(255, 107, 53, 0.15);
+  stroke: rgba(255, 107, 53, 0.12);
   stroke-width: 1;
   fill: none;
   transition: var(--transition-medium);
 }
 
 .connection-line.active {
-  stroke: rgba(255, 107, 53, 0.5);
+  stroke: rgba(255, 107, 53, 0.8);
   stroke-width: 2;
-  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.4));
+  filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.6));
+  animation: line-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes line-glow {
+  0% {
+    stroke: rgba(255, 107, 53, 0.6);
+    filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.4));
+  }
+  100% {
+    stroke: rgba(255, 107, 53, 1);
+    filter: drop-shadow(0 0 8px rgba(255, 107, 53, 0.8));
+  }
 }
 
 /* ===================================
@@ -245,6 +278,7 @@ body {
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-medium);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   z-index: 1000;
   min-width: 200px;
@@ -345,6 +379,64 @@ body {
 
 .empty-state span {
   font-size: 14px;
+}
+
+/* ===================================
+   Zoom Controls
+   =================================== */
+
+.zoom-controls {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.zoom-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.zoom-level {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light);
+  min-width: 50px;
+  text-align: center;
 }
 
 /* ===================================

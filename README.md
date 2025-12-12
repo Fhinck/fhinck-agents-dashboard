@@ -1,4 +1,4 @@
-# AI Workforce Nexus
+# AI Workforce Fhinck
 
 Dashboard em tempo real para visualização de agentes de IA trabalhando.
 

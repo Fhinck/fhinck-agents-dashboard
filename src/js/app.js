@@ -1,10 +1,11 @@
 /**
- * AI Workforce Nexus - Main Application
+ * AI Workforce Fhinck - Main Application
  * Real-time dashboard for AI agents visualization
  */
 
-import { initAgentsListener, onAgentsUpdate, getAgents, getTotalAgentsCount, getActiveAgentsCount } from './agents-store.js';
-import { initRenderer, renderAgents, updateStatusBadges } from './renderer.js';
+import { initAgentsListener, onAgentsUpdate, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray } from './agents-store.js';
+import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView } from './renderer.js';
+import { getQueueStatus, clearQueue, forceStopAnimations } from './animation-queue.js';
 
 // Application state
 let isInitialized = false;
@@ -13,7 +14,7 @@ let isInitialized = false;
  * Initialize the dashboard application
  */
 async function init() {
-  console.log('🚀 Initializing AI Workforce Nexus...');
+  console.log('🚀 Initializing AI Workforce Fhinck...');
 
   try {
     // Initialize renderer
@@ -156,11 +157,41 @@ function showError(message) {
 /**
  * Expose utilities for debugging
  */
-window.AIWorkforceNexus = {
+window.AIWorkforceFhinck = {
   getAgents,
+  getAgentsArray,
   getTotalAgentsCount,
   getActiveAgentsCount,
-  isInitialized: () => isInitialized
+  isInitialized: () => isInitialized,
+  // Zoom and pan controls
+  zoomIn,
+  zoomOut,
+  resetZoom,
+  centerView,
+  fitToView,
+  // Animation queue controls
+  getQueueStatus,
+  clearQueue,
+  forceStopAnimations,
+  // Animation testing
+  testFocus: (agentId) => {
+    const agents = getAgentsArray();
+    const targetId = agentId || (agents.length > 0 ? agents[0].id : null);
+    if (targetId) {
+      console.log(`🧪 Testing focus animation on: ${targetId}`);
+      animateFocus(targetId, 'Test task - debugging animation');
+    } else {
+      console.warn('⚠️ No agents available to test');
+    }
+  },
+  testUnfocus: (agentId) => {
+    const agents = getAgentsArray();
+    const targetId = agentId || (agents.length > 0 ? agents[0].id : null);
+    if (targetId) {
+      console.log(`🧪 Testing unfocus animation on: ${targetId}`);
+      animateUnfocus(targetId);
+    }
+  }
 };
 
 // Initialize when DOM is ready

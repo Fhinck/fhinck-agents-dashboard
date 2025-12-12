@@ -53,10 +53,33 @@ const ICONS = {
 // State
 let focusedAgentId = null;
 let rendererInstance = null;
+let currentZoom = 1;
+let currentPanX = 0;
+let currentPanY = 0;
+
+// Pan/drag state
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let panStartX = 0;
+let panStartY = 0;
+
+// Agent positions map (calculated during render)
+const agentPositions = new Map();
 
 // DOM references
 let agentsContainer = null;
 let connectionsLayer = null;
+let canvasArea = null;
+
+// Zoom configuration
+const ZOOM_CONFIG = {
+  scale: 2.5,           // Zoom level when focused (mais zoom)
+  transitionDuration: 1200,
+  minZoom: 0.5,
+  maxZoom: 3,
+  zoomStep: 0.25
+};
 
 /**
  * Initialize the renderer
@@ -64,17 +87,241 @@ let connectionsLayer = null;
 export function initRenderer() {
   agentsContainer = document.getElementById('agents-container');
   connectionsLayer = document.getElementById('connections');
+  canvasArea = document.querySelector('.canvas-area');
 
   if (!agentsContainer || !connectionsLayer) {
     console.error('❌ Renderer: Required DOM elements not found');
     return;
   }
 
+  // Initialize zoom controls
+  initZoomControls();
+
+  // Initialize pan controls
+  initPanControls();
+
   rendererInstance = {
     resetAllStates
   };
 
   console.log('🎨 Renderer initialized');
+}
+
+/**
+ * Initialize zoom controls
+ */
+function initZoomControls() {
+  const zoomInBtn = document.getElementById('zoom-in');
+  const zoomOutBtn = document.getElementById('zoom-out');
+  const zoomResetBtn = document.getElementById('zoom-reset');
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => {
+      if (!focusedAgentId) {
+        setManualZoom(currentZoom + ZOOM_CONFIG.zoomStep);
+      }
+    });
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => {
+      if (!focusedAgentId) {
+        setManualZoom(currentZoom - ZOOM_CONFIG.zoomStep);
+      }
+    });
+  }
+
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener('click', () => {
+      if (!focusedAgentId) {
+        resetManualZoom();
+      }
+    });
+  }
+
+  const zoomFitBtn = document.getElementById('zoom-fit');
+  if (zoomFitBtn) {
+    zoomFitBtn.addEventListener('click', () => {
+      if (!focusedAgentId) {
+        fitToView();
+      }
+    });
+  }
+
+  // Mouse wheel zoom (with Ctrl key or without - like n8n)
+  if (canvasArea) {
+    canvasArea.addEventListener('wheel', (e) => {
+      if (focusedAgentId) return;
+
+      e.preventDefault();
+
+      // Get mouse position relative to canvas
+      const rect = canvasArea.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Calculate zoom
+      const delta = e.deltaY > 0 ? -ZOOM_CONFIG.zoomStep : ZOOM_CONFIG.zoomStep;
+      const newZoom = Math.max(ZOOM_CONFIG.minZoom, Math.min(ZOOM_CONFIG.maxZoom, currentZoom + delta));
+
+      if (newZoom !== currentZoom) {
+        // Zoom towards mouse position
+        const zoomRatio = newZoom / currentZoom;
+
+        // Adjust pan to zoom towards mouse
+        currentPanX = mouseX - (mouseX - currentPanX) * zoomRatio;
+        currentPanY = mouseY - (mouseY - currentPanY) * zoomRatio;
+
+        currentZoom = newZoom;
+        applyTransform();
+        updateZoomDisplay();
+      }
+    }, { passive: false });
+  }
+
+  console.log('🔍 Zoom controls initialized');
+}
+
+/**
+ * Initialize pan/drag controls
+ */
+function initPanControls() {
+  if (!canvasArea) return;
+
+  // Mouse down - start dragging
+  canvasArea.addEventListener('mousedown', (e) => {
+    // Only start drag with left mouse button and not on agent nodes
+    if (e.button !== 0 || e.target.closest('.agent-node')) return;
+    if (focusedAgentId) return; // Don't pan while focused on an agent
+
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    panStartX = currentPanX;
+    panStartY = currentPanY;
+
+    canvasArea.classList.add('panning');
+    e.preventDefault();
+  });
+
+  // Mouse move - update pan
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+
+    // Apply pan (adjusted for zoom level)
+    currentPanX = panStartX + deltaX / currentZoom;
+    currentPanY = panStartY + deltaY / currentZoom;
+
+    applyTransform();
+  });
+
+  // Mouse up - stop dragging
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      canvasArea.classList.remove('panning');
+    }
+  });
+
+  // Mouse leave - stop dragging if mouse leaves window
+  document.addEventListener('mouseleave', () => {
+    if (isDragging) {
+      isDragging = false;
+      canvasArea.classList.remove('panning');
+    }
+  });
+
+  console.log('🖐️ Pan controls initialized');
+}
+
+/**
+ * Set manual zoom level
+ * @param {number} zoom - Zoom level (0.5 to 3)
+ */
+function setManualZoom(zoom) {
+  currentZoom = Math.max(ZOOM_CONFIG.minZoom, Math.min(ZOOM_CONFIG.maxZoom, zoom));
+  applyTransform();
+  updateZoomDisplay();
+}
+
+/**
+ * Apply transform (zoom + pan)
+ */
+function applyTransform() {
+  const transform = `translate(${currentPanX}px, ${currentPanY}px) scale(${currentZoom})`;
+
+  if (agentsContainer) {
+    agentsContainer.style.transform = transform;
+  }
+  if (connectionsLayer) {
+    connectionsLayer.style.transform = transform;
+  }
+}
+
+/**
+ * Apply manual zoom transform (legacy - now uses applyTransform)
+ */
+function applyManualZoom() {
+  applyTransform();
+}
+
+/**
+ * Reset manual zoom and pan
+ */
+function resetManualZoom() {
+  currentZoom = 1;
+  currentPanX = 0;
+  currentPanY = 0;
+  applyTransform();
+  updateZoomDisplay();
+}
+
+/**
+ * Update zoom display
+ */
+function updateZoomDisplay() {
+  const zoomLevel = document.getElementById('zoom-level');
+  if (zoomLevel) {
+    zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+  }
+}
+
+/**
+ * Export zoom functions for external use
+ */
+export function zoomIn() {
+  setManualZoom(currentZoom + ZOOM_CONFIG.zoomStep);
+}
+
+export function zoomOut() {
+  setManualZoom(currentZoom - ZOOM_CONFIG.zoomStep);
+}
+
+export function resetZoom() {
+  resetManualZoom();
+}
+
+/**
+ * Center the view (reset pan only, keep zoom)
+ */
+export function centerView() {
+  currentPanX = 0;
+  currentPanY = 0;
+  applyTransform();
+}
+
+/**
+ * Fit all agents in view
+ */
+export function fitToView() {
+  currentZoom = 1;
+  currentPanX = 0;
+  currentPanY = 0;
+  applyTransform();
+  updateZoomDisplay();
 }
 
 /**
@@ -94,21 +341,47 @@ export function renderAgents(agents) {
 
   const agentsArray = [...agents.values()];
 
-  // Calculate positions for agents in a network layout
-  const positions = calculateNetworkPositions(agentsArray.length);
+  // Separate Orchestrator from other agents
+  const orchestratorIndex = agentsArray.findIndex(a => a.id === 'orchestrator');
+  let orchestrator = null;
+  let otherAgents = agentsArray;
 
-  // Clear existing agents
+  if (orchestratorIndex !== -1) {
+    orchestrator = agentsArray[orchestratorIndex];
+    otherAgents = agentsArray.filter(a => a.id !== 'orchestrator');
+  }
+
+  // Calculate positions: Orchestrator in center, others in circle
+  const centerX = 0.5;
+  const centerY = 0.5;
+
+  // Clear existing agents and positions
   agentsContainer.innerHTML = '';
+  agentPositions.clear();
 
-  // Render each agent
-  agentsArray.forEach((agent, index) => {
-    const position = agent.position || positions[index];
+  // Render Orchestrator in center first
+  if (orchestrator) {
+    const position = { x: centerX, y: centerY };
+    agentPositions.set(orchestrator.id, position);
+    const element = createAgentElement(orchestrator, position);
+    agentsContainer.appendChild(element);
+  }
+
+  // Render other agents in a circle around the Orchestrator
+  const radius = 0.35; // Distance from center
+  otherAgents.forEach((agent, index) => {
+    const angle = (2 * Math.PI * index / otherAgents.length) - Math.PI / 2; // Start from top
+    const position = {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius
+    };
+    agentPositions.set(agent.id, position);
     const element = createAgentElement(agent, position);
     agentsContainer.appendChild(element);
   });
 
-  // Render connections
-  renderConnections(agents);
+  // Render connections (each agent connects only to Orchestrator)
+  renderConnections(agents, orchestrator, otherAgents);
 
   // Hide loading state
   const loadingState = document.getElementById('loading-state');
@@ -122,6 +395,20 @@ export function renderAgents(agents) {
 }
 
 /**
+ * Convert hex color to RGB values
+ * @param {string} hex - Hex color string (e.g., '#FF6B35')
+ * @returns {Object} RGB values {r, g, b}
+ */
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 255, g: 107, b: 53 }; // Default orange
+}
+
+/**
  * Create an agent DOM element
  * @param {Object} agent - Agent data
  * @param {Object} position - Position {x, y} as percentages
@@ -131,7 +418,15 @@ function createAgentElement(agent, position) {
   const element = document.createElement('div');
   element.className = 'agent-node';
   element.dataset.agentId = agent.id;
-  element.style.setProperty('--agent-color', agent.color || '#FF6B35');
+
+  // Set agent color and RGB values for animations
+  const color = agent.color || '#FF6B35';
+  const rgb = hexToRgb(color);
+  element.style.setProperty('--agent-color', color);
+  element.style.setProperty('--agent-r', rgb.r);
+  element.style.setProperty('--agent-g', rgb.g);
+  element.style.setProperty('--agent-b', rgb.b);
+
   element.style.left = `${position.x * 100}%`;
   element.style.top = `${position.y * 100}%`;
 
@@ -227,62 +522,43 @@ function calculateNetworkPositions(count) {
 
 /**
  * Render connection lines between agents
+ * Each agent connects only to the Orchestrator (hub-and-spoke layout)
  * @param {Map} agents - Map of agents
+ * @param {Object} orchestrator - The Orchestrator agent (center)
+ * @param {Array} otherAgents - All other agents
  */
-export function renderConnections(agents) {
+export function renderConnections(agents, orchestrator, otherAgents) {
   if (!connectionsLayer) return;
-
-  const agentsArray = [...agents.values()];
-  const positions = calculateNetworkPositions(agentsArray.length);
 
   // Clear existing connections
   connectionsLayer.innerHTML = '';
 
-  if (agentsArray.length < 2) return;
+  // Need at least orchestrator and one other agent
+  if (!orchestrator || otherAgents.length === 0) return;
 
   const rect = connectionsLayer.getBoundingClientRect();
 
-  // Create connections (connect to nearby agents)
-  agentsArray.forEach((agent, i) => {
-    const pos1 = agent.position || positions[i];
-    const x1 = pos1.x * rect.width;
-    const y1 = pos1.y * rect.height;
+  // Orchestrator position (center)
+  const centerPos = agentPositions.get(orchestrator.id) || { x: 0.5, y: 0.5 };
+  const centerX = centerPos.x * rect.width;
+  const centerY = centerPos.y * rect.height;
 
-    // Connect to next few agents
-    for (let j = i + 1; j < Math.min(i + 3, agentsArray.length); j++) {
-      const pos2 = agentsArray[j].position || positions[j];
-      const x2 = pos2.x * rect.width;
-      const y2 = pos2.y * rect.height;
+  // Connect each agent to the Orchestrator only
+  otherAgents.forEach((agent) => {
+    const agentPos = agentPositions.get(agent.id) || { x: 0.5, y: 0.5 };
+    const agentX = agentPos.x * rect.width;
+    const agentY = agentPos.y * rect.height;
 
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x1);
-      line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2);
-      line.setAttribute('y2', y2);
-      line.classList.add('connection-line');
-      line.dataset.from = agent.id;
-      line.dataset.to = agentsArray[j].id;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', agentX);
+    line.setAttribute('y1', agentY);
+    line.setAttribute('x2', centerX);
+    line.setAttribute('y2', centerY);
+    line.classList.add('connection-line');
+    line.dataset.from = agent.id;
+    line.dataset.to = orchestrator.id;
 
-      connectionsLayer.appendChild(line);
-    }
-
-    // Connect to center (first agent) if not already connected
-    if (i > 2) {
-      const pos0 = agentsArray[0].position || positions[0];
-      const x0 = pos0.x * rect.width;
-      const y0 = pos0.y * rect.height;
-
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x1);
-      line.setAttribute('y1', y1);
-      line.setAttribute('x2', x0);
-      line.setAttribute('y2', y0);
-      line.classList.add('connection-line');
-      line.dataset.from = agent.id;
-      line.dataset.to = agentsArray[0].id;
-
-      connectionsLayer.appendChild(line);
-    }
+    connectionsLayer.appendChild(line);
   });
 }
 
@@ -293,6 +569,12 @@ export function renderConnections(agents) {
  * @returns {Promise} Resolves when animation completes
  */
 export async function animateFocus(agentId, task) {
+  // First, unfocus any currently focused agent (only one can be focused at a time)
+  if (focusedAgentId && focusedAgentId !== agentId) {
+    console.log(`🔄 Unfocusing previous agent: ${focusedAgentId}`);
+    await animateUnfocus(focusedAgentId);
+  }
+
   return new Promise((resolve) => {
     const agentElement = document.querySelector(`[data-agent-id="${agentId}"]`);
 
@@ -303,6 +585,59 @@ export async function animateFocus(agentId, task) {
     }
 
     focusedAgentId = agentId;
+
+    // Get agent position for zoom centering
+    const agent = getAgent(agentId);
+    // Use calculated position from agentPositions map, or fallback
+    const agentPos = agentPositions.get(agentId) || agent?.position || { x: 0.5, y: 0.5 };
+
+    // Get canvas dimensions
+    const canvasRect = canvasArea.getBoundingClientRect();
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
+
+    // Calculate agent position in pixels
+    const agentX = agentPos.x * canvasWidth;
+    const agentY = agentPos.y * canvasHeight;
+
+    // Calculate center of canvas
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+
+    // Calculate zoom transform to center on agent
+    const scale = ZOOM_CONFIG.scale;
+
+    // With transform-origin: 0 0, we need to:
+    // 1. Scale from top-left
+    // 2. Translate so the agent ends up in the center
+    // Formula: translate = center - (agentPos * scale)
+    const focusPanX = centerX - (agentX * scale);
+    const focusPanY = centerY - (agentY * scale);
+
+    console.log(`🎯 Focus on agent at (${agentX}, ${agentY}), translate to (${focusPanX}, ${focusPanY}), scale: ${scale}`);
+
+    // Apply zoom to canvas (vignette effect)
+    if (canvasArea) {
+      canvasArea.classList.add('focusing');
+      // Set vignette center at the agent's screen position after transform
+      canvasArea.style.setProperty('--focus-x', `${centerX}px`);
+      canvasArea.style.setProperty('--focus-y', `${centerY}px`);
+    }
+
+    // Apply zoom and translation to agents layer
+    // Note: translate first, then scale (with transform-origin: 0 0)
+    const focusTransform = `translate(${focusPanX}px, ${focusPanY}px) scale(${scale})`;
+
+    if (agentsContainer) {
+      agentsContainer.classList.add('zoomed');
+      agentsContainer.style.transform = focusTransform;
+    }
+
+    // Apply same transform to connections layer
+    if (connectionsLayer) {
+      connectionsLayer.classList.add('zoomed');
+      connectionsLayer.style.transform = focusTransform;
+    }
 
     // Dim other agents
     document.querySelectorAll('.agent-node').forEach(node => {
@@ -323,11 +658,10 @@ export async function animateFocus(agentId, task) {
     });
 
     // Update info panel
-    const agent = getAgent(agentId);
     updateAgentInfo(agent, task);
 
     // Resolve after transition
-    setTimeout(resolve, 1000);
+    setTimeout(resolve, ZOOM_CONFIG.transitionDuration);
   });
 }
 
@@ -348,6 +682,24 @@ export async function animateUnfocus(agentId) {
       if (indicator) indicator.remove();
     }
 
+    // Reset zoom on canvas
+    if (canvasArea) {
+      canvasArea.classList.remove('focusing');
+    }
+
+    // Reset zoom on agents layer (restore manual zoom + pan if set)
+    if (agentsContainer) {
+      agentsContainer.classList.remove('zoomed');
+    }
+
+    // Reset zoom on connections layer (restore manual zoom + pan if set)
+    if (connectionsLayer) {
+      connectionsLayer.classList.remove('zoomed');
+    }
+
+    // Restore manual zoom and pan
+    applyTransform();
+
     // Restore other agents
     document.querySelectorAll('.agent-node').forEach(node => {
       node.classList.remove('dimmed');
@@ -361,7 +713,7 @@ export async function animateUnfocus(agentId) {
     focusedAgentId = null;
     clearAgentInfo();
 
-    setTimeout(resolve, 800);
+    setTimeout(resolve, ZOOM_CONFIG.transitionDuration);
   });
 }
 
@@ -421,6 +773,20 @@ function resetAllStates() {
   document.querySelectorAll('.connection-line').forEach(line => {
     line.classList.remove('active');
   });
+
+  // Reset zoom (restore manual zoom + pan if set)
+  if (canvasArea) {
+    canvasArea.classList.remove('focusing');
+  }
+  if (agentsContainer) {
+    agentsContainer.classList.remove('zoomed');
+  }
+  if (connectionsLayer) {
+    connectionsLayer.classList.remove('zoomed');
+  }
+
+  // Restore manual zoom and pan
+  applyTransform();
 
   focusedAgentId = null;
   clearAgentInfo();

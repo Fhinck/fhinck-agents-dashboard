@@ -22,11 +22,15 @@ export function initAgentsListener() {
   const q = query(agentsRef, orderBy('createdAt', 'asc'));
 
   unsubscribe = onSnapshot(q, (snapshot) => {
+    console.log(`📡 Firestore snapshot received: ${snapshot.docChanges().length} changes`);
+
     snapshot.docChanges().forEach((change) => {
       const agent = {
         id: change.doc.id,
         ...change.doc.data()
       };
+
+      console.log(`   📄 Change type: ${change.type}, Agent: ${agent.id}, Status: ${agent.status}`);
 
       if (change.type === 'added') {
         handleAgentAdded(agent);
@@ -77,24 +81,34 @@ function handleAgentModified(agent) {
   const previousStatus = previousStatuses.get(agent.id);
   agents.set(agent.id, agent);
 
+  console.log(`🔍 Agent modified: ${agent.name}`);
+  console.log(`   Previous status: "${previousStatus}", New status: "${agent.status}"`);
+  console.log(`   Status changed: ${previousStatus !== agent.status}`);
+
   // Detect status change
   if (previousStatus !== agent.status) {
     console.log(`🔄 Agent ${agent.name}: ${previousStatus} → ${agent.status}`);
 
     if (agent.status === 'working') {
+      console.log(`   ✅ Queueing FOCUS animation for ${agent.id}`);
       queueAnimation({
         type: 'focus',
         agentId: agent.id,
         task: agent.currentTask
       });
     } else if (agent.status === 'idle' && previousStatus === 'working') {
+      console.log(`   ✅ Queueing UNFOCUS animation for ${agent.id}`);
       queueAnimation({
         type: 'unfocus',
         agentId: agent.id
       });
+    } else {
+      console.log(`   ⏭️ Status changed but no animation needed (${previousStatus} → ${agent.status})`);
     }
 
     previousStatuses.set(agent.id, agent.status);
+  } else {
+    console.log(`   ⏭️ Status unchanged, skipping animation`);
   }
 }
 
