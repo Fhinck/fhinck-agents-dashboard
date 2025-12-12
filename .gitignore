@@ -12,6 +12,9 @@ dist/
 # Firebase
 .firebase/
 serviceAccountKey.json
+
+# n8n workflows (contain sensitive data)
+n8n/
 *-debug.log
 
 # IDE
