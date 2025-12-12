@@ -1,0 +1,443 @@
+/* ===================================
+   AI Workforce Nexus - Animations
+   =================================== */
+
+/* ===================================
+   Agent Node - Base State
+   =================================== */
+
+.agent-node {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--agent-color, #FF6B35);
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 107, 53, 0.15) 0%,
+    rgba(255, 107, 53, 0.05) 70%,
+    transparent 100%
+  );
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.agent-node::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.agent-node:hover:not(.focused):not(.dimmed) {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
+}
+
+/* ===================================
+   Agent Node - Content
+   =================================== */
+
+.agent-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--agent-color, #FF6B35);
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.agent-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.agent-name {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.8;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.agent-type {
+  font-size: 7px;
+  color: var(--color-text-muted);
+  text-align: center;
+  opacity: 0;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+/* ===================================
+   Agent Node - Dimmed State
+   =================================== */
+
+.agent-node.dimmed {
+  opacity: 0.2;
+  transform: translate(-50%, -50%) scale(0.7);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.agent-node.dimmed .agent-icon,
+.agent-node.dimmed .agent-name {
+  opacity: 0.3;
+}
+
+/* ===================================
+   Agent Node - Focused State
+   =================================== */
+
+.agent-node.focused {
+  width: 220px;
+  height: 220px;
+  z-index: 100;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 107, 53, 0.2) 0%,
+    rgba(255, 107, 53, 0.08) 50%,
+    rgba(255, 107, 53, 0.02) 100%
+  );
+  box-shadow:
+    0 0 60px rgba(255, 107, 53, 0.25),
+    0 0 120px rgba(255, 107, 53, 0.1),
+    inset 0 0 60px rgba(255, 107, 53, 0.05);
+}
+
+.agent-node.focused .agent-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+
+.agent-node.focused .agent-name {
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 1;
+  max-width: 180px;
+}
+
+.agent-node.focused .agent-type {
+  font-size: 11px;
+  opacity: 0.7;
+  max-width: 180px;
+  margin-top: 2px;
+}
+
+/* ===================================
+   Agent Node - Speaking Animation
+   =================================== */
+
+.agent-node.speaking {
+  border: none;
+}
+
+.agent-node.speaking::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  padding: 6px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 20deg,
+    var(--agent-color, #FF6B35) 20deg 50deg,
+    transparent 50deg 90deg,
+    var(--agent-color, #FF6B35) 90deg 120deg,
+    transparent 120deg 160deg,
+    var(--agent-color, #FF6B35) 160deg 190deg,
+    transparent 190deg 230deg,
+    var(--agent-color, #FF6B35) 230deg 260deg,
+    transparent 260deg 300deg,
+    var(--agent-color, #FF6B35) 300deg 330deg,
+    transparent 330deg 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotate-border 2.5s linear infinite;
+}
+
+@keyframes rotate-border {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Inner pulse when speaking */
+.agent-node.speaking::after {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 107, 53, 0.25) 0%,
+    transparent 70%
+  );
+  animation: pulse-inner 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-inner {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+/* ===================================
+   Agent Node - Working Indicator
+   =================================== */
+
+.agent-node.working:not(.focused) {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 107, 53, 0.4);
+  }
+}
+
+.working-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: var(--agent-color, #FF6B35);
+  border-radius: 50%;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ===================================
+   Connection Line Animations
+   =================================== */
+
+.connection-line {
+  stroke-dasharray: 5 5;
+  animation: dash-flow 20s linear infinite;
+}
+
+@keyframes dash-flow {
+  to { stroke-dashoffset: -100; }
+}
+
+.connection-line.active {
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.connection-line.pulse {
+  animation: line-pulse 1s ease-out;
+}
+
+@keyframes line-pulse {
+  0% {
+    stroke-width: 1;
+    stroke: rgba(255, 107, 53, 0.2);
+  }
+  50% {
+    stroke-width: 3;
+    stroke: rgba(255, 107, 53, 0.8);
+  }
+  100% {
+    stroke-width: 1;
+    stroke: rgba(255, 107, 53, 0.2);
+  }
+}
+
+/* ===================================
+   Particle Effects
+   =================================== */
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.particle.animate {
+  animation: particle-float 2s ease-out forwards;
+}
+
+@keyframes particle-float {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx, 50px), var(--ty, -50px)) scale(0);
+  }
+}
+
+/* ===================================
+   Focus Transition Overlay
+   =================================== */
+
+.focus-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  transition: background 0.5s ease;
+  z-index: 50;
+}
+
+.focus-overlay.active {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ===================================
+   Ripple Effect on Click
+   =================================== */
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.3);
+  transform: scale(0);
+  animation: ripple-effect 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-effect {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===================================
+   Entrance Animations
+   =================================== */
+
+.agent-node.entering {
+  animation: agent-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes agent-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.agent-node.leaving {
+  animation: agent-leave 0.4s ease-in forwards;
+}
+
+@keyframes agent-leave {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* ===================================
+   Status Badge Animations
+   =================================== */
+
+.status-badge span {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.status-badge.updating span {
+  animation: count-update 0.3s ease;
+}
+
+@keyframes count-update {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ===================================
+   Canvas Background Animation
+   =================================== */
+
+.canvas-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.02) 0%, transparent 40%);
+  animation: bg-shift 30s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes bg-shift {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+    background:
+      radial-gradient(circle at 70% 20%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 30% 80%, rgba(255, 107, 53, 0.02) 0%, transparent 40%);
+  }
+}
+
+/* ===================================
+   Grid Background Pattern
+   =================================== */
+
+.canvas-area::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 107, 53, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 107, 53, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.5;
+}

@@ -1,0 +1,1079 @@
+# AI Workforce Nexus - Especificação Técnica
+
+## Visão Geral
+
+Dashboard em tempo real para visualização de agentes de IA trabalhando. O sistema exibe agentes como "bolinhas" conectadas em uma rede visual. Quando um agente inicia um trabalho, sua bolinha recebe foco (aumenta de tamanho) e a borda anima como se estivesse "falando". Ao finalizar, volta ao estado normal.
+
+### Stack Tecnológica
+
+- **Frontend**: HTML/CSS/JavaScript (vanilla ou React)
+- **Hospedagem**: Firebase Hosting
+- **Banco de Dados**: Firestore (real-time)
+- **Automação**: n8n (envia eventos para o Firestore)
+
+---
+
+## Arquitetura
+
+```
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│   Agentes IA    │ ──── │      n8n        │ ──── │    Firestore    │
+│  (via webhook)  │      │  (fluxo/workflow)│      │   (real-time)   │
+└─────────────────┘      └─────────────────┘      └────────┬────────┘
+                                                           │
+                                                           │ onSnapshot()
+                                                           │ (push automático)
+                                                           ▼
+                                                  ┌─────────────────┐
+                                                  │    Frontend     │
+                                                  │   (Dashboard)   │
+                                                  └─────────────────┘
+```
+
+### Fluxo de Dados
+
+1. Agente de IA inicia/finaliza trabalho
+2. Agente envia webhook para n8n com payload `{agentId, event: "start"|"end", metadata}`
+3. n8n processa e escreve no Firestore:
+   - Atualiza `agents/{agentId}.status`
+   - Adiciona registro em `activity/`
+4. Firestore notifica o frontend automaticamente via `onSnapshot()`
+5. Frontend recebe evento, adiciona na fila de animação
+6. Sistema de fila processa animações sequencialmente
+
+---
+
+## Estrutura do Firestore
+
+### Coleção: `agents`
+
+Lista de todos os agentes cadastrados. Documento por agente.
+
+```javascript
+// Documento: agents/{agentId}
+{
+  id: "agent_kai",                    // string - identificador único
+  name: "Agent KAI",                  // string - nome de exibição
+  type: "Conversational Architect",   // string - tipo/função do agente
+  icon: "brain",                      // string - ícone (nome do ícone ou emoji)
+  color: "#FF6B35",                   // string - cor do agente (hex)
+  status: "idle",                     // string - "idle" | "working"
+  currentTask: null,                  // string | null - descrição da tarefa atual
+  lastActivityAt: Timestamp,          // timestamp - última atividade
+  createdAt: Timestamp,               // timestamp - data de criação
+  position: {                         // object - posição na visualização (opcional)
+    x: 0.5,                           // number - posição X (0-1, percentual)
+    y: 0.5                            // number - posição Y (0-1, percentual)
+  }
+}
+```
+
+#### Exemplos de Agentes
+
+```javascript
+// agents/data_miner
+{
+  id: "data_miner",
+  name: "Data Miner Bot",
+  type: "Data Extraction",
+  icon: "database",
+  color: "#4ECDC4",
+  status: "idle",
+  currentTask: null,
+  lastActivityAt: null,
+  createdAt: Timestamp.now()
+}
+
+// agents/security_sentinel
+{
+  id: "security_sentinel",
+  name: "Security Sentinel",
+  type: "Monitoring",
+  icon: "shield",
+  color: "#95E1A3",
+  status: "idle",
+  currentTask: null,
+  lastActivityAt: null,
+  createdAt: Timestamp.now()
+}
+
+// agents/agent_kai
+{
+  id: "agent_kai",
+  name: "Agent KAI",
+  type: "Conversational Architect",
+  icon: "message-circle",
+  color: "#FF8C42",
+  status: "working",
+  currentTask: "Processing Request",
+  lastActivityAt: Timestamp.now(),
+  createdAt: Timestamp.now()
+}
+```
+
+### Coleção: `activity`
+
+Log de todas as atividades dos agentes. Para histórico e analytics.
+
+```javascript
+// Documento: activity/{auto-generated-id}
+{
+  agentId: "agent_kai",              // string - referência ao agente
+  event: "start",                    // string - "start" | "end"
+  task: "Processing user request",   // string - descrição da tarefa
+  timestamp: Timestamp,              // timestamp - momento do evento
+  duration: null,                    // number | null - duração em ms (preenchido no "end")
+  metadata: {                        // object - dados extras (opcional)
+    triggeredBy: "user_123",
+    inputTokens: 150,
+    outputTokens: 450
+  }
+}
+```
+
+### Coleção: `config` (opcional)
+
+Configurações globais do dashboard.
+
+```javascript
+// Documento: config/dashboard
+{
+  title: "AI Workforce Nexus",
+  subtitle: "Live Operations",
+  theme: "dark",
+  animationDuration: 2000,           // ms - duração da animação de foco
+  refreshInterval: 5000,             // ms - intervalo de refresh (fallback)
+  maxVisibleAgents: 24
+}
+```
+
+---
+
+## API do n8n para Firestore
+
+O n8n deve expor um webhook que recebe eventos dos agentes e escreve no Firestore.
+
+### Webhook de Entrada (n8n recebe)
+
+```
+POST /webhook/agent-activity
+Content-Type: application/json
+
+{
+  "agentId": "agent_kai",
+  "event": "start",                  // "start" ou "end"
+  "task": "Processing user request",
+  "metadata": {
+    "triggeredBy": "user_123"
+  }
+}
+```
+
+### Ações do n8n
+
+#### Quando `event: "start"`:
+
+1. Atualizar documento do agente:
+```javascript
+// Firestore: UPDATE agents/{agentId}
+{
+  status: "working",
+  currentTask: task,
+  lastActivityAt: Timestamp.now()
+}
+```
+
+2. Criar registro de atividade:
+```javascript
+// Firestore: ADD activity/
+{
+  agentId: agentId,
+  event: "start",
+  task: task,
+  timestamp: Timestamp.now(),
+  metadata: metadata
+}
+```
+
+#### Quando `event: "end"`:
+
+1. Atualizar documento do agente:
+```javascript
+// Firestore: UPDATE agents/{agentId}
+{
+  status: "idle",
+  currentTask: null,
+  lastActivityAt: Timestamp.now()
+}
+```
+
+2. Criar registro de atividade:
+```javascript
+// Firestore: ADD activity/
+{
+  agentId: agentId,
+  event: "end",
+  task: task,
+  timestamp: Timestamp.now(),
+  duration: calculatedDuration,      // calcular baseado no último "start"
+  metadata: metadata
+}
+```
+
+---
+
+## Especificação do Frontend
+
+### Estrutura de Arquivos
+
+```
+/public
+  index.html
+  
+/src
+  /styles
+    main.css
+    animations.css
+  /js
+    app.js              # Inicialização
+    firebase-config.js  # Configuração Firebase
+    agents-store.js     # Gerenciamento de estado dos agentes
+    animation-queue.js  # Sistema de fila de animações
+    renderer.js         # Renderização visual (Canvas ou SVG)
+    
+/assets
+  /icons               # Ícones dos agentes (se não usar biblioteca)
+```
+
+### Configuração Firebase
+
+```javascript
+// firebase-config.js
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+```
+
+### Listener Real-time
+
+```javascript
+// agents-store.js
+import { db } from './firebase-config.js';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { queueAnimation } from './animation-queue.js';
+
+let agents = new Map();
+let previousStatuses = new Map();
+
+export function initAgentsListener() {
+  const agentsRef = collection(db, 'agents');
+  
+  onSnapshot(agentsRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      const agent = { id: change.doc.id, ...change.doc.data() };
+      
+      if (change.type === 'added') {
+        agents.set(agent.id, agent);
+        previousStatuses.set(agent.id, agent.status);
+      }
+      
+      if (change.type === 'modified') {
+        const previousStatus = previousStatuses.get(agent.id);
+        agents.set(agent.id, agent);
+        
+        // Detectar mudança de status
+        if (previousStatus !== agent.status) {
+          if (agent.status === 'working') {
+            queueAnimation({
+              type: 'focus',
+              agentId: agent.id,
+              task: agent.currentTask
+            });
+          } else if (agent.status === 'idle') {
+            queueAnimation({
+              type: 'unfocus',
+              agentId: agent.id
+            });
+          }
+          previousStatuses.set(agent.id, agent.status);
+        }
+      }
+      
+      if (change.type === 'removed') {
+        agents.delete(agent.id);
+        previousStatuses.delete(agent.id);
+      }
+    });
+  });
+}
+
+export function getAgents() {
+  return agents;
+}
+```
+
+### Sistema de Fila de Animações
+
+```javascript
+// animation-queue.js
+import { animateFocus, animateUnfocus } from './renderer.js';
+
+const queue = [];
+let isProcessing = false;
+
+const ANIMATION_DURATION = 3000;      // Duração da animação de foco
+const FOCUS_DISPLAY_TIME = 5000;      // Tempo mínimo em foco
+const TRANSITION_DELAY = 500;         // Delay entre animações
+
+export function queueAnimation(event) {
+  queue.push({
+    ...event,
+    queuedAt: Date.now()
+  });
+  
+  processQueue();
+}
+
+async function processQueue() {
+  if (isProcessing || queue.length === 0) return;
+  
+  isProcessing = true;
+  
+  const event = queue.shift();
+  
+  try {
+    if (event.type === 'focus') {
+      await animateFocus(event.agentId, event.task);
+      // Manter em foco por tempo mínimo
+      await sleep(FOCUS_DISPLAY_TIME);
+    } else if (event.type === 'unfocus') {
+      await animateUnfocus(event.agentId);
+      await sleep(TRANSITION_DELAY);
+    }
+  } catch (error) {
+    console.error('Animation error:', error);
+  }
+  
+  isProcessing = false;
+  
+  // Processar próximo item
+  if (queue.length > 0) {
+    processQueue();
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Utilitário para verificar fila
+export function getQueueStatus() {
+  return {
+    length: queue.length,
+    isProcessing,
+    items: [...queue]
+  };
+}
+```
+
+### Renderização Visual
+
+```javascript
+// renderer.js
+
+// Estado visual
+let focusedAgentId = null;
+
+/**
+ * Anima o foco em um agente específico
+ * - Faz zoom in no agente
+ * - Aumenta o tamanho da bolinha
+ * - Inicia animação de borda pulsante
+ * - Exibe nome e tarefa atual
+ */
+export async function animateFocus(agentId, task) {
+  return new Promise((resolve) => {
+    const agentElement = document.querySelector(`[data-agent-id="${agentId}"]`);
+    if (!agentElement) {
+      resolve();
+      return;
+    }
+    
+    focusedAgentId = agentId;
+    
+    // Diminuir outros agentes
+    document.querySelectorAll('.agent-node').forEach(node => {
+      if (node.dataset.agentId !== agentId) {
+        node.classList.add('dimmed');
+      }
+    });
+    
+    // Focar no agente selecionado
+    agentElement.classList.add('focused', 'speaking');
+    
+    // Atualizar info exibida
+    updateAgentInfo(agentId, task);
+    
+    // Aguardar animação de transição
+    setTimeout(resolve, 1000);
+  });
+}
+
+/**
+ * Remove o foco de um agente
+ * - Faz zoom out
+ * - Restaura tamanho normal
+ * - Para animação de borda
+ * - Mostra visão geral
+ */
+export async function animateUnfocus(agentId) {
+  return new Promise((resolve) => {
+    const agentElement = document.querySelector(`[data-agent-id="${agentId}"]`);
+    
+    if (agentElement) {
+      agentElement.classList.remove('focused', 'speaking');
+    }
+    
+    // Restaurar outros agentes
+    document.querySelectorAll('.agent-node').forEach(node => {
+      node.classList.remove('dimmed');
+    });
+    
+    focusedAgentId = null;
+    clearAgentInfo();
+    
+    setTimeout(resolve, 800);
+  });
+}
+
+function updateAgentInfo(agentId, task) {
+  const infoPanel = document.getElementById('agent-info');
+  if (infoPanel) {
+    infoPanel.innerHTML = `
+      <div class="current-task">
+        <span class="task-label">${task || 'Processing...'}</span>
+      </div>
+    `;
+    infoPanel.classList.add('visible');
+  }
+}
+
+function clearAgentInfo() {
+  const infoPanel = document.getElementById('agent-info');
+  if (infoPanel) {
+    infoPanel.classList.remove('visible');
+  }
+}
+```
+
+---
+
+## Estilos CSS
+
+### Tema Visual
+
+O design deve seguir o estilo mostrado na referência:
+- **Background**: Escuro (#1a1a2e ou similar)
+- **Cor principal**: Laranja/Amber (#FF6B35, #FF8C42)
+- **Linhas de conexão**: Cinza escuro com opacidade
+- **Cards de status**: Fundo semi-transparente com borda sutil
+
+### Animações CSS
+
+```css
+/* animations.css */
+
+/* Estado base do agente */
+.agent-node {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--agent-color, #FF6B35);
+  background: rgba(255, 107, 53, 0.1);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.agent-node .agent-name {
+  font-size: 10px;
+  color: #fff;
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* Estado diminuído (outros agentes quando um está em foco) */
+.agent-node.dimmed {
+  opacity: 0.3;
+  transform: scale(0.8);
+}
+
+/* Estado em foco */
+.agent-node.focused {
+  width: 200px;
+  height: 200px;
+  z-index: 100;
+  transform: translate(-50%, -50%) scale(1);
+  background: rgba(255, 107, 53, 0.15);
+  box-shadow: 
+    0 0 60px rgba(255, 107, 53, 0.3),
+    0 0 100px rgba(255, 107, 53, 0.1);
+}
+
+.agent-node.focused .agent-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Animação de "falando" - borda rotativa segmentada */
+.agent-node.speaking {
+  border: none;
+  position: relative;
+}
+
+.agent-node.speaking::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  padding: 4px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 30deg,
+    var(--agent-color, #FF6B35) 30deg 60deg,
+    transparent 60deg 120deg,
+    var(--agent-color, #FF6B35) 120deg 150deg,
+    transparent 150deg 210deg,
+    var(--agent-color, #FF6B35) 210deg 240deg,
+    transparent 240deg 300deg,
+    var(--agent-color, #FF6B35) 300deg 330deg,
+    transparent 330deg 360deg
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotate-border 3s linear infinite;
+}
+
+@keyframes rotate-border {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulso interno quando falando */
+.agent-node.speaking::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 107, 53, 0.2) 0%,
+    transparent 70%
+  );
+  animation: pulse-inner 2s ease-in-out infinite;
+}
+
+@keyframes pulse-inner {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Linhas de conexão entre agentes */
+.connection-line {
+  stroke: rgba(255, 107, 53, 0.2);
+  stroke-width: 1;
+  fill: none;
+}
+
+.connection-line.active {
+  stroke: rgba(255, 107, 53, 0.6);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.4));
+}
+
+/* Header do dashboard */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.dashboard-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.status-badges {
+  display: flex;
+  gap: 12px;
+}
+
+.status-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  color: #FF8C42;
+}
+
+/* Sidebar de navegação */
+.sidebar {
+  width: 200px;
+  background: rgba(0, 0, 0, 0.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 0;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+  background: rgba(255, 107, 53, 0.1);
+  color: #FF8C42;
+}
+
+/* Painel de informação do agente ativo */
+#agent-info {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 32px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#agent-info.visible {
+  opacity: 1;
+}
+
+.task-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+```
+
+---
+
+## HTML Base
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Workforce Nexus - Live Operations</title>
+  <link rel="stylesheet" href="src/styles/main.css">
+  <link rel="stylesheet" href="src/styles/animations.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <div class="logo">
+          <svg><!-- Logo icon --></svg>
+        </div>
+        <h1 class="dashboard-title">AI Workforce Nexus - Live Operations</h1>
+      </div>
+      <div class="status-badges">
+        <div class="status-badge" id="total-agents">
+          Total Agents: <span>0</span>
+        </div>
+        <div class="status-badge" id="active-agents">
+          Active Now: <span>0</span>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main Content -->
+    <div class="main-container">
+      <!-- Sidebar -->
+      <nav class="sidebar">
+        <div class="sidebar-item active" data-view="dashboard">
+          <svg><!-- Icon --></svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="sidebar-item" data-view="agent-pool">
+          <svg><!-- Icon --></svg>
+          <span>Agent Pool</span>
+        </div>
+        <div class="sidebar-item" data-view="analytics">
+          <svg><!-- Icon --></svg>
+          <span>Analytics</span>
+        </div>
+        <div class="sidebar-item" data-view="logs">
+          <svg><!-- Icon --></svg>
+          <span>Logs</span>
+        </div>
+        <div class="sidebar-item" data-view="settings">
+          <svg><!-- Icon --></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
+      
+      <!-- Canvas Area -->
+      <main class="canvas-area" id="agents-canvas">
+        <!-- SVG para linhas de conexão -->
+        <svg class="connections-layer" id="connections">
+          <!-- Linhas geradas dinamicamente -->
+        </svg>
+        
+        <!-- Container dos agentes -->
+        <div class="agents-layer" id="agents-container">
+          <!-- Agentes gerados dinamicamente -->
+        </div>
+      </main>
+    </div>
+    
+    <!-- Info Panel -->
+    <div id="agent-info">
+      <!-- Preenchido dinamicamente quando um agente está em foco -->
+    </div>
+  </div>
+  
+  <!-- Firebase SDK -->
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>
+```
+
+---
+
+## Inicialização do App
+
+```javascript
+// app.js
+import { initAgentsListener, getAgents } from './agents-store.js';
+import { renderAgents, renderConnections } from './renderer.js';
+
+async function init() {
+  console.log('🚀 Initializing AI Workforce Nexus...');
+  
+  // Iniciar listener do Firestore
+  initAgentsListener();
+  
+  // Renderização inicial (será atualizada pelo listener)
+  updateUI();
+  
+  console.log('✅ Dashboard initialized');
+}
+
+function updateUI() {
+  const agents = getAgents();
+  
+  // Atualizar contadores
+  document.querySelector('#total-agents span').textContent = agents.size;
+  
+  const activeCount = [...agents.values()].filter(a => a.status === 'working').length;
+  document.querySelector('#active-agents span').textContent = activeCount;
+  
+  // Renderizar agentes e conexões
+  renderAgents(agents);
+  renderConnections(agents);
+}
+
+// Expor para atualizações do store
+window.updateDashboardUI = updateUI;
+
+// Iniciar quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', init);
+```
+
+---
+
+## Regras de Segurança Firestore
+
+```javascript
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Agentes: leitura pública, escrita apenas autenticado (n8n service account)
+    match /agents/{agentId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Atividades: leitura pública, escrita apenas autenticado
+    match /activity/{activityId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Config: apenas leitura
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+```
+
+---
+
+## Deploy no Firebase
+
+### Comandos
+
+```bash
+# Instalar Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Inicializar projeto
+firebase init
+
+# Selecionar:
+# - Firestore
+# - Hosting
+
+# Deploy
+firebase deploy
+```
+
+### firebase.json
+
+```json
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Checklist de Implementação
+
+### Fase 1: Setup Básico
+- [ ] Criar projeto no Firebase Console
+- [ ] Configurar Firestore (criar coleções `agents`, `activity`)
+- [ ] Configurar Firebase Hosting
+- [ ] Estrutura base de arquivos do frontend
+- [ ] Configuração do Firebase SDK no frontend
+
+### Fase 2: Backend (n8n)
+- [ ] Criar webhook no n8n para receber eventos
+- [ ] Configurar node Firestore no n8n
+- [ ] Implementar lógica de start/end
+- [ ] Testar fluxo completo
+
+### Fase 3: Frontend Core
+- [ ] Implementar listener real-time do Firestore
+- [ ] Criar sistema de fila de animações
+- [ ] Renderizar agentes estáticos
+
+### Fase 4: Animações
+- [ ] Animação de foco (zoom in, aumentar bolinha)
+- [ ] Animação de borda "falando"
+- [ ] Animação de unfocus (zoom out)
+- [ ] Transições suaves entre estados
+
+### Fase 5: UI Completa
+- [ ] Header com contadores
+- [ ] Sidebar de navegação
+- [ ] Linhas de conexão entre agentes
+- [ ] Painel de informação do agente ativo
+- [ ] Responsividade
+
+### Fase 6: Testes e Deploy
+- [ ] Testar com dados reais
+- [ ] Ajustar tempos de animação
+- [ ] Deploy para Firebase Hosting
+- [ ] Monitoramento
+
+---
+
+## Dados de Teste
+
+Para popular o Firestore inicialmente, use estes dados:
+
+```javascript
+// Executar no console do Firebase ou via script
+
+const testAgents = [
+  {
+    id: "agent_kai",
+    name: "Agent KAI",
+    type: "Conversational Architect",
+    icon: "message-circle",
+    color: "#FF8C42",
+    status: "idle",
+    currentTask: null
+  },
+  {
+    id: "data_miner",
+    name: "Data Miner Bot",
+    type: "Data Extraction",
+    icon: "database",
+    color: "#4ECDC4",
+    status: "idle",
+    currentTask: null
+  },
+  {
+    id: "security_sentinel",
+    name: "Security Sentinel",
+    type: "Monitoring",
+    icon: "shield",
+    color: "#95E1A3",
+    status: "idle",
+    currentTask: null
+  },
+  {
+    id: "report_generator",
+    name: "Report Generator",
+    type: "Document Creation",
+    icon: "file-text",
+    color: "#9B5DE5",
+    status: "idle",
+    currentTask: null
+  },
+  {
+    id: "email_assistant",
+    name: "Email Assistant",
+    type: "Communication",
+    icon: "mail",
+    color: "#F15BB5",
+    status: "idle",
+    currentTask: null
+  },
+  {
+    id: "code_reviewer",
+    name: "Code Reviewer",
+    type: "Quality Assurance",
+    icon: "code",
+    color: "#00BBF9",
+    status: "idle",
+    currentTask: null
+  }
+];
+
+// Adicionar ao Firestore
+testAgents.forEach(agent => {
+  db.collection('agents').doc(agent.id).set({
+    ...agent,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastActivityAt: null
+  });
+});
+```
+
+---
+
+## Simulador de Eventos (para testes)
+
+```javascript
+// test-simulator.js
+// Execute no console do navegador para simular eventos
+
+async function simulateAgentWork(agentId, taskName, durationMs = 5000) {
+  const db = firebase.firestore();
+  
+  // Iniciar trabalho
+  console.log(`🟢 ${agentId} iniciando: ${taskName}`);
+  await db.collection('agents').doc(agentId).update({
+    status: 'working',
+    currentTask: taskName,
+    lastActivityAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  
+  // Aguardar duração
+  await new Promise(resolve => setTimeout(resolve, durationMs));
+  
+  // Finalizar trabalho
+  console.log(`🔴 ${agentId} finalizou: ${taskName}`);
+  await db.collection('agents').doc(agentId).update({
+    status: 'idle',
+    currentTask: null,
+    lastActivityAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// Simular sequência de trabalhos
+async function runSimulation() {
+  await simulateAgentWork('agent_kai', 'Processing user request', 6000);
+  await simulateAgentWork('data_miner', 'Extracting sales data', 4000);
+  await simulateAgentWork('security_sentinel', 'Running security scan', 3000);
+}
+
+// Executar: runSimulation()
+```
+
+---
+
+## Referência Visual
+
+O design deve seguir o estilo da imagem de referência fornecida:
+- Dashboard escuro com tema laranja/amber
+- Agentes como círculos conectados por linhas finas
+- Agente ativo em destaque central com borda animada segmentada
+- Header com título e badges de status
+- Sidebar com navegação
+- Visual futurista e clean
