@@ -1,5 +1,5 @@
 {
-  "name": "ai-workforce-nexus",
+  "name": "ai-workforce-fhinck",
   "version": "1.0.0",
   "description": "Real-time dashboard for AI agents visualization",
   "main": "src/js/app.js",
@@ -8,8 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "firebase deploy",
-    "seed": "node scripts/seed-firestore.js"
+    "publish": "vite build && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:all": "vite build && firebase deploy"
   },
   "dependencies": {
     "firebase": "^10.7.1"
