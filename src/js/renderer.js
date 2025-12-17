@@ -435,11 +435,22 @@ function createAgentElement(agent, position) {
     element.classList.add('working');
   }
 
-  // Icon
-  const iconHtml = ICONS[agent.icon] || ICONS['default'];
+  // Icon - use SVG if available, otherwise show initials
   const iconDiv = document.createElement('div');
   iconDiv.className = 'agent-icon';
-  iconDiv.innerHTML = iconHtml;
+
+  if (agent.icon && ICONS[agent.icon]) {
+    iconDiv.innerHTML = ICONS[agent.icon];
+  } else {
+    // Use initials as fallback
+    const initials = agent.name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+    iconDiv.innerHTML = `<span class="agent-initials">${initials}</span>`;
+  }
   element.appendChild(iconDiv);
 
   // Name
