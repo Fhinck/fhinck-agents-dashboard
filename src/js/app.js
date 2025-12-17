@@ -126,9 +126,9 @@ async function handleHomeRoute() {
   showHomeView();
   showHomeLoading();
 
-  // Fetch and display projects
+  // Fetch and display projects (force refresh to get latest data)
   try {
-    const projects = await fetchProjects();
+    const projects = await fetchProjects(true);
     renderProjectsList(projects, handleProjectClick);
 
     // Update auto rotation projects

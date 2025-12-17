@@ -41,9 +41,13 @@ export async function fetchProjects(forceRefresh = false) {
     // Group agents by projectId
     const projectsMap = new Map();
 
+    console.log(`📊 Processing ${snapshot.size} agents...`);
+
     snapshot.forEach(doc => {
       const agent = { id: doc.id, ...doc.data() };
       const projectId = agent.projectId || 'default';
+
+      console.log(`   Agent: ${agent.name} | projectId: "${projectId}"`);
 
       if (!projectsMap.has(projectId)) {
         projectsMap.set(projectId, {
@@ -53,6 +57,7 @@ export async function fetchProjects(forceRefresh = false) {
           agents: [],
           lastActivity: null
         });
+        console.log(`   📁 New project found: "${projectId}"`);
       }
 
       const project = projectsMap.get(projectId);
