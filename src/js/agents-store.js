@@ -14,6 +14,7 @@ const agents = new Map();
 const previousStatuses = new Map();
 let unsubscribe = null;
 let onUpdateCallback = null;
+let onStatusChangeCallback = null;
 let currentProjectId = null;
 
 /**
@@ -119,6 +120,10 @@ function handleAgentAdded(agent) {
       agentId: agent.id,
       task: agent.currentTask
     });
+    // Notify status change (agent started working)
+    if (onStatusChangeCallback) {
+      onStatusChangeCallback(agent, 'start', agent.currentTask);
+    }
   }
 }
 
@@ -144,12 +149,20 @@ function handleAgentModified(agent) {
         agentId: agent.id,
         task: agent.currentTask
       });
+      // Notify status change (start working)
+      if (onStatusChangeCallback) {
+        onStatusChangeCallback(agent, 'start', agent.currentTask);
+      }
     } else if (agent.status === 'idle' && previousStatus === 'working') {
       console.log(`   ✅ Queueing UNFOCUS animation for ${agent.id}`);
       queueAnimation({
         type: 'unfocus',
         agentId: agent.id
       });
+      // Notify status change (end working)
+      if (onStatusChangeCallback) {
+        onStatusChangeCallback(agent, 'end');
+      }
     } else {
       console.log(`   ⏭️ Status changed but no animation needed (${previousStatus} → ${agent.status})`);
     }
@@ -208,6 +221,15 @@ export function getActiveAgentsCount() {
  */
 export function onAgentsUpdate(callback) {
   onUpdateCallback = callback;
+}
+
+/**
+ * Set callback to be called on agent status changes
+ * @param {Function} callback - Function to call with (agent, event, task)
+ *   event: 'start' | 'end'
+ */
+export function onStatusChange(callback) {
+  onStatusChangeCallback = callback;
 }
 
 /**

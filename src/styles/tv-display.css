@@ -1,0 +1,686 @@
+/* ===================================
+   TV Display Enhancements
+   Styles for TV/Large Screen Display
+   =================================== */
+
+/* ===================================
+   Animated Logo
+   =================================== */
+
+.animated-logo .logo-ring-outer {
+  animation: logo-rotate 20s linear infinite;
+  transform-origin: 20px 20px;
+}
+
+.animated-logo .logo-ring-inner {
+  animation: logo-rotate 15s linear infinite reverse;
+  transform-origin: 20px 20px;
+}
+
+.animated-logo .logo-line {
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes logo-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes logo-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ===================================
+   Header Center (Clock & Live)
+   =================================== */
+
+.header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-clock {
+  text-align: center;
+}
+
+.clock-time {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: var(--color-text-primary);
+  letter-spacing: 0.05em;
+}
+
+.clock-date {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #10B981;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #10B981;
+  border-radius: 50%;
+  animation: pulse-live 1.5s ease-in-out infinite;
+  box-shadow: 0 0 10px #10B981;
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+/* ===================================
+   Enhanced Status Badges
+   =================================== */
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 107, 53, 0.08);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-medium);
+}
+
+.status-badge svg {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.badge-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary-light);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.badge-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.active {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.2);
+}
+
+.status-badge.active .badge-value {
+  color: var(--color-primary);
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+/* ===================================
+   Notifications
+   =================================== */
+
+.notifications-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  max-width: 320px;
+}
+
+.notification {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.notification.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.notification.dismissing {
+  transform: translateX(120%);
+  opacity: 0;
+}
+
+.notification-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--notification-color, var(--color-primary));
+}
+
+.notification-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--notification-color, var(--color-primary-light));
+  margin-bottom: 2px;
+}
+
+.notification-message {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--notification-color, var(--color-primary));
+  width: 100%;
+  transform-origin: left;
+}
+
+@keyframes notification-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.notification-agent-start {
+  border-left: 3px solid var(--notification-color, var(--color-primary));
+}
+
+.notification-agent-end {
+  border-left: 3px solid #10B981;
+}
+
+.notification-agent-end .notification-icon {
+  color: #10B981;
+}
+
+/* ===================================
+   Activity Feed
+   =================================== */
+
+.activity-feed {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 280px;
+  max-height: calc(100% - 40px);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.activity-feed.hidden {
+  display: none;
+}
+
+.activity-feed-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.activity-feed-header svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary);
+}
+
+.activity-feed-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.activity-feed-empty {
+  padding: 30px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 16px;
+  transition: background 0.2s ease;
+}
+
+.activity-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.activity-item.new {
+  animation: activity-new 0.5s ease;
+}
+
+@keyframes activity-new {
+  from {
+    background: rgba(255, 107, 53, 0.2);
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    background: transparent;
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.activity-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.activity-indicator.start {
+  background: var(--agent-color, var(--color-primary));
+  box-shadow: 0 0 8px var(--agent-color, var(--color-primary));
+  animation: pulse-indicator 1s ease-in-out infinite;
+}
+
+.activity-indicator.end {
+  background: #10B981;
+}
+
+@keyframes pulse-indicator {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-agent {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--agent-color, var(--color-primary-light));
+  margin-bottom: 2px;
+}
+
+.activity-task {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-time {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* ===================================
+   Auto Rotation Indicator
+   =================================== */
+
+.rotation-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: 30px;
+  backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.rotation-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rotation-toggle svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  transition: all 0.3s ease;
+}
+
+.rotation-toggle:hover {
+  background: rgba(255, 107, 53, 0.2);
+}
+
+.rotation-toggle:hover svg {
+  color: var(--color-primary);
+}
+
+.rotation-toggle.active {
+  background: var(--color-primary);
+}
+
+.rotation-toggle.active svg {
+  color: white;
+  animation: rotate-icon 2s linear infinite;
+}
+
+@keyframes rotate-icon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rotation-progress {
+  width: 100px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.rotation-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: var(--color-primary);
+  transform-origin: left;
+}
+
+@keyframes rotation-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.rotation-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.rotation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rotation-dot:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.rotation-dot.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+/* ===================================
+   Enhanced Connection Lines
+   =================================== */
+
+.connection-line {
+  stroke: rgba(255, 107, 53, 0.15);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 5, 5;
+  animation: dash-flow 20s linear infinite;
+}
+
+@keyframes dash-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 100; }
+}
+
+.connection-line.active {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 8px var(--color-primary));
+  animation: connection-pulse 1s ease-in-out infinite;
+}
+
+@keyframes connection-pulse {
+  0%, 100% {
+    stroke: rgba(255, 107, 53, 0.8);
+    filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.5));
+  }
+  50% {
+    stroke: var(--color-primary);
+    filter: drop-shadow(0 0 12px var(--color-primary));
+  }
+}
+
+/* ===================================
+   Enhanced Agent Nodes
+   =================================== */
+
+.agent-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.agent-node .agent-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.2), rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.1));
+  border: 2px solid var(--agent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Idle breathing animation */
+.agent-node:not(.working):not(.focused) .agent-icon {
+  animation: agent-breathe 3s ease-in-out infinite;
+}
+
+@keyframes agent-breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px 5px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.2);
+  }
+}
+
+.agent-node .agent-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--agent-color);
+}
+
+.agent-node .agent-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: center;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-node .agent-type {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.2s ease;
+}
+
+.agent-node:hover .agent-type,
+.agent-node.focused .agent-type {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Working state */
+.agent-node.working .agent-icon {
+  animation: agent-working 1.5s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.5);
+}
+
+@keyframes agent-working {
+  0%, 100% {
+    transform: scale(1);
+    border-width: 2px;
+  }
+  50% {
+    transform: scale(1.1);
+    border-width: 3px;
+  }
+}
+
+/* Working indicator ring */
+.working-indicator {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px dashed var(--agent-color);
+  animation: indicator-spin 3s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes indicator-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Focused state */
+.agent-node.focused .agent-icon {
+  transform: scale(1.2);
+  box-shadow: 0 0 50px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.6);
+}
+
+/* Speaking animation */
+.agent-node.speaking .agent-icon {
+  animation: agent-speaking 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes agent-speaking {
+  from {
+    box-shadow: 0 0 30px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.4);
+  }
+  to {
+    box-shadow: 0 0 50px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.7);
+  }
+}
+
+/* Dimmed state */
+.agent-node.dimmed {
+  opacity: 0.3;
+  transform: translate(-50%, -50%) scale(0.9);
+  filter: grayscale(0.5);
+}
+
+/* Hover effect */
+.agent-node:hover:not(.dimmed) .agent-icon {
+  transform: scale(1.1);
+  box-shadow: 0 0 25px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.4);
+}
+
+/* ===================================
+   Vignette Effect
+   =================================== */
+
+.canvas-area.focusing::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--focus-x, 50%) var(--focus-y, 50%),
+    transparent 0%,
+    transparent 20%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+  animation: vignette-in 0.8s ease-out;
+}
+
+@keyframes vignette-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

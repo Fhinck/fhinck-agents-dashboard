@@ -1,19 +1,25 @@
 /**
  * AI Workforce Fhinck - Main Application
  * Real-time dashboard for AI agents visualization
- * Supports multiple projects with routing and caching
+ * Supports multiple projects with routing, caching, and TV display features
  */
 
-import { initAgentsListener, onAgentsUpdate, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray, stopAgentsListener } from './agents-store.js';
+import { initAgentsListener, onAgentsUpdate, onStatusChange, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray, stopAgentsListener, getAgent } from './agents-store.js';
 import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView, showHomeView, showProjectView, renderProjectsList, showHomeLoading } from './renderer.js';
 import { getQueueStatus, clearQueue, forceStopAnimations } from './animation-queue.js';
 import { initRouter, registerRoutes, navigateHome, navigateToProject, getCurrentProjectId } from './router.js';
-import { fetchProjects, getProjects, getProject, onProjectsUpdate } from './projects-store.js';
+import { fetchProjects, getProjects, getProject, getProjectsArray, onProjectsUpdate } from './projects-store.js';
 import { clearAllCache, getCacheStats } from './cache-manager.js';
+import { initParticles, createBurst } from './particles.js';
+import { initNotifications, showNotification, notifyAgentStart, notifyAgentEnd } from './notifications.js';
+import { initActivityFeed, addActivity, toggleActivityFeed } from './activity-feed.js';
+import { initAutoRotation, setProjects as setRotationProjects, startRotation, stopRotation, isRotationEnabled } from './auto-rotation.js';
 
 // Application state
 let isInitialized = false;
 let currentView = 'home'; // 'home' | 'project'
+let tasksToday = 0;
+let clockInterval = null;
 
 /**
  * Initialize the dashboard application
@@ -22,11 +28,18 @@ async function init() {
   console.log('🚀 Initializing AI Workforce Fhinck...');
 
   try {
+    // Initialize visual systems
+    initParticles();
+    initNotifications();
+
     // Initialize renderer
     initRenderer();
 
     // Set up agents update callback
     onAgentsUpdate(handleAgentsUpdate);
+
+    // Set up agent status change callback (for notifications/activity feed)
+    onStatusChange(onAgentStatusChange);
 
     // Set up projects update callback
     onProjectsUpdate(handleProjectsUpdate);
@@ -44,6 +57,12 @@ async function init() {
     // Set up window resize handler
     setupResizeHandler();
 
+    // Initialize clock
+    initClock();
+
+    // Initialize auto rotation
+    initAutoRotation(navigateToProject);
+
     // Initialize router (will trigger initial route)
     initRouter();
 
@@ -57,6 +76,40 @@ async function init() {
 }
 
 /**
+ * Initialize live clock
+ */
+function initClock() {
+  updateClock();
+  clockInterval = setInterval(updateClock, 1000);
+}
+
+/**
+ * Update clock display
+ */
+function updateClock() {
+  const now = new Date();
+
+  const timeEl = document.getElementById('clock-time');
+  const dateEl = document.getElementById('clock-date');
+
+  if (timeEl) {
+    timeEl.textContent = now.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short'
+    });
+  }
+}
+
+/**
  * Handle home route
  */
 async function handleHomeRoute() {
@@ -66,6 +119,9 @@ async function handleHomeRoute() {
   // Stop any existing agent listener
   stopAgentsListener();
 
+  // Hide activity feed on home
+  toggleActivityFeed(false);
+
   // Show home view
   showHomeView();
   showHomeLoading();
@@ -74,12 +130,15 @@ async function handleHomeRoute() {
   try {
     const projects = await fetchProjects();
     renderProjectsList(projects, handleProjectClick);
+
+    // Update auto rotation projects
+    setRotationProjects(getProjectsArray());
   } catch (error) {
     console.error('❌ Error loading projects:', error);
   }
 
   // Reset status badges
-  updateStatusBadges(0, 0);
+  updateEnhancedBadges(0, 0);
 }
 
 /**
@@ -97,6 +156,10 @@ async function handleProjectRoute(params) {
 
   // Show project view
   showProjectView(projectName);
+
+  // Initialize activity feed for this project
+  initActivityFeed();
+  toggleActivityFeed(true);
 
   // Show loading state
   const loadingState = document.getElementById('loading-state');
@@ -127,7 +190,7 @@ function handleAgentsUpdate(agents) {
   renderAgents(agents);
 
   // Update status badges
-  updateStatusBadges(getTotalAgentsCount(), getActiveAgentsCount());
+  updateEnhancedBadges(getTotalAgentsCount(), getActiveAgentsCount());
 }
 
 /**
@@ -139,6 +202,9 @@ function handleProjectsUpdate(projects) {
 
   console.log(`📂 Projects updated: ${projects.size} total`);
   renderProjectsList(projects, handleProjectClick);
+
+  // Update auto rotation projects
+  setRotationProjects(getProjectsArray());
 }
 
 /**
@@ -154,6 +220,69 @@ function formatProjectName(projectId) {
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/**
+ * Update enhanced status badges
+ */
+function updateEnhancedBadges(total, active) {
+  // Total agents
+  const totalBadge = document.getElementById('total-agents');
+  if (totalBadge) {
+    const valueEl = totalBadge.querySelector('.badge-value');
+    if (valueEl) valueEl.textContent = total;
+  }
+
+  // Active agents
+  const activeBadge = document.getElementById('active-agents');
+  if (activeBadge) {
+    const valueEl = activeBadge.querySelector('.badge-value');
+    if (valueEl) valueEl.textContent = active;
+  }
+
+  // Tasks today
+  const tasksBadge = document.getElementById('tasks-today');
+  if (tasksBadge) {
+    const valueEl = tasksBadge.querySelector('.badge-value');
+    if (valueEl) valueEl.textContent = tasksToday;
+  }
+
+  // Also update legacy badges for compatibility
+  updateStatusBadges(total, active);
+}
+
+/**
+ * Notify agent status change
+ * Called by agents-store when status changes
+ */
+export function onAgentStatusChange(agent, event, task) {
+  if (event === 'start') {
+    // Show notification
+    notifyAgentStart(agent.name, task, agent.color);
+
+    // Add to activity feed
+    addActivity({
+      agentName: agent.name,
+      agentColor: agent.color,
+      event: 'start',
+      task
+    });
+
+    // Increment tasks counter
+    tasksToday++;
+    updateEnhancedBadges(getTotalAgentsCount(), getActiveAgentsCount());
+
+  } else if (event === 'end') {
+    // Show notification
+    notifyAgentEnd(agent.name, agent.color);
+
+    // Add to activity feed
+    addActivity({
+      agentName: agent.name,
+      agentColor: agent.color,
+      event: 'end'
+    });
+  }
 }
 
 /**
@@ -259,11 +388,13 @@ window.AIWorkforceFhinck = {
   // Agent data
   getAgents,
   getAgentsArray,
+  getAgent,
   getTotalAgentsCount,
   getActiveAgentsCount,
   // Project data
   getProjects,
   getProject,
+  getProjectsArray,
   // Navigation
   navigateHome,
   navigateToProject,
@@ -284,12 +415,24 @@ window.AIWorkforceFhinck = {
   // Cache controls
   clearAllCache,
   getCacheStats,
+  // Auto rotation
+  startRotation,
+  stopRotation,
+  isRotationEnabled,
+  // Particles
+  createBurst,
+  // Notifications
+  showNotification,
   // Animation testing
   testFocus: (agentId) => {
     const agents = getAgentsArray();
     const targetId = agentId || (agents.length > 0 ? agents[0].id : null);
     if (targetId) {
       console.log(`🧪 Testing focus animation on: ${targetId}`);
+      const agent = getAgent(targetId);
+      if (agent) {
+        onAgentStatusChange(agent, 'start', 'Test task - debugging animation');
+      }
       animateFocus(targetId, 'Test task - debugging animation');
     } else {
       console.warn('⚠️ No agents available to test');
@@ -300,6 +443,10 @@ window.AIWorkforceFhinck = {
     const targetId = agentId || (agents.length > 0 ? agents[0].id : null);
     if (targetId) {
       console.log(`🧪 Testing unfocus animation on: ${targetId}`);
+      const agent = getAgent(targetId);
+      if (agent) {
+        onAgentStatusChange(agent, 'end');
+      }
       animateUnfocus(targetId);
     }
   }
@@ -307,3 +454,6 @@ window.AIWorkforceFhinck = {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
+
+// Export for use in agents-store
+export { onAgentStatusChange as notifyStatusChange };
