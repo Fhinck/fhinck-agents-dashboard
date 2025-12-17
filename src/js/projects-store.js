@@ -92,7 +92,7 @@ export async function fetchProjects(forceRefresh = false) {
  */
 function formatProjectName(projectId) {
   if (!projectId || projectId === 'default') {
-    return 'Projeto Principal';
+    return 'Fhinck New Dashboard';
   }
 
   // Convert kebab-case to Title Case

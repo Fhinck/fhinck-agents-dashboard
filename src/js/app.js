@@ -214,7 +214,7 @@ function handleProjectsUpdate(projects) {
  */
 function formatProjectName(projectId) {
   if (!projectId || projectId === 'default') {
-    return 'Projeto Principal';
+    return 'Fhinck New Dashboard';
   }
   return projectId
     .split('-')

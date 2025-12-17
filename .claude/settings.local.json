@@ -9,7 +9,20 @@
       "Bash(npm install)",
       "Bash(npm run publish:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add multi-project support with routing and caching\n\n- Add router.js for hash-based navigation (/, /#/projeto/{id})\n- Add cache-manager.js with LocalStorage caching (5min TTL)\n- Add projects-store.js to manage project list from agents\n- Update agents-store.js to filter by projectId\n- Add home view with project cards grid\n- Update renderer.js with view management functions\n- Add Firestore composite index for projectId + createdAt\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add multi-project support with routing and caching\n\n- Add router.js for hash-based navigation (/, /#/projeto/{id})\n- Add cache-manager.js with LocalStorage caching (5min TTL)\n- Add projects-store.js to manage project list from agents\n- Update agents-store.js to filter by projectId\n- Add home view with project cards grid\n- Update renderer.js with view management functions\n- Add Firestore composite index for projectId + createdAt\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add TV display mode with visual enhancements\n\n- Add particles.js for animated background effects\n- Add notifications.js for toast notification system\n- Add activity-feed.js for real-time activity sidebar\n- Add auto-rotation.js for carousel between projects\n- Add tv-display.css with enhanced visual styles\n- Update index.html with clock, live indicator, enhanced badges\n- Update agents-store.js with status change callbacks\n- Update app.js integrating all new features\n- Add .firebaserc for default project configuration\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gcloud firestore indexes list:*)",
+      "Bash(gcloud firestore databases list:*)",
+      "Bash(gcloud firestore export:*)",
+      "Bash(gcloud auth print-access-token:*)",
+      "Bash(npx firebase-tools:*)",
+      "Bash(node -e:*)",
+      "Bash(firebase firestore:databases:list:*)",
+      "Bash(npm install:*)",
+      "Bash(gcloud auth application-default login:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

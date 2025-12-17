@@ -35,8 +35,8 @@ export function initAgentsListener(projectId = null) {
   const agentsRef = collection(db, 'agents');
   let q;
 
-  if (projectId) {
-    // Filter by projectId
+  if (projectId && projectId !== 'default') {
+    // Filter by specific projectId
     q = query(
       agentsRef,
       where('projectId', '==', projectId),
@@ -44,9 +44,9 @@ export function initAgentsListener(projectId = null) {
     );
     console.log(`👀 Listening to agents for project: ${projectId}`);
   } else {
-    // All agents (for backward compatibility)
+    // For 'default' or no projectId, get all agents (they likely don't have projectId field)
     q = query(agentsRef, orderBy('createdAt', 'asc'));
-    console.log('👀 Listening to all agents...');
+    console.log('👀 Listening to all agents (default project)...');
   }
 
   // Check cache for initial data
