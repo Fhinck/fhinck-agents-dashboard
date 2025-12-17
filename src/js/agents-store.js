@@ -1,25 +1,66 @@
 /**
  * Agents Store
  * Manages the state of agents and real-time Firestore listener
+ * Supports filtering by projectId
  */
 
 import { db } from './firebase-config.js';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { queueAnimation } from './animation-queue.js';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { queueAnimation, clearQueue } from './animation-queue.js';
+import { getCache, setCache, invalidateProjectCache } from './cache-manager.js';
 
 // State
 const agents = new Map();
 const previousStatuses = new Map();
 let unsubscribe = null;
 let onUpdateCallback = null;
+let currentProjectId = null;
 
 /**
- * Initialize the agents listener
- * Listens to changes in the agents collection
+ * Initialize the agents listener for a specific project
+ * @param {string} projectId - Project ID to filter agents
  */
-export function initAgentsListener() {
+export function initAgentsListener(projectId = null) {
+  // Stop existing listener if any
+  stopAgentsListener();
+
+  // Clear current state
+  agents.clear();
+  previousStatuses.clear();
+  clearQueue();
+
+  currentProjectId = projectId;
+
   const agentsRef = collection(db, 'agents');
-  const q = query(agentsRef, orderBy('createdAt', 'asc'));
+  let q;
+
+  if (projectId) {
+    // Filter by projectId
+    q = query(
+      agentsRef,
+      where('projectId', '==', projectId),
+      orderBy('createdAt', 'asc')
+    );
+    console.log(`👀 Listening to agents for project: ${projectId}`);
+  } else {
+    // All agents (for backward compatibility)
+    q = query(agentsRef, orderBy('createdAt', 'asc'));
+    console.log('👀 Listening to all agents...');
+  }
+
+  // Check cache for initial data
+  const cacheKey = projectId ? `agents_${projectId}` : 'agents_all';
+  const cached = getCache(cacheKey);
+  if (cached && cached.length > 0) {
+    console.log(`📦 Loading ${cached.length} agents from cache`);
+    cached.forEach(agent => {
+      agents.set(agent.id, agent);
+      previousStatuses.set(agent.id, agent.status);
+    });
+    if (onUpdateCallback) {
+      onUpdateCallback(agents);
+    }
+  }
 
   unsubscribe = onSnapshot(q, (snapshot) => {
     console.log(`📡 Firestore snapshot received: ${snapshot.docChanges().length} changes`);
@@ -45,15 +86,22 @@ export function initAgentsListener() {
       }
     });
 
+    // Update cache
+    const agentsArray = Array.from(agents.values());
+    setCache(cacheKey, agentsArray);
+
     // Trigger update callback
     if (onUpdateCallback) {
       onUpdateCallback(agents);
     }
   }, (error) => {
     console.error('❌ Error listening to agents:', error);
+    // If index not found, provide helpful message
+    if (error.code === 'failed-precondition') {
+      console.error('💡 You may need to create a composite index for projectId + createdAt');
+      console.error('   Run: firebase deploy --only firestore:indexes');
+    }
   });
-
-  console.log('👀 Listening to agents collection...');
 }
 
 /**
@@ -179,4 +227,33 @@ export function stopAgentsListener() {
  */
 export function getAgentsArray() {
   return [...agents.values()];
+}
+
+/**
+ * Get current project ID
+ * @returns {string|null}
+ */
+export function getCurrentProjectId() {
+  return currentProjectId;
+}
+
+/**
+ * Clear agents store
+ */
+export function clearAgentsStore() {
+  stopAgentsListener();
+  agents.clear();
+  previousStatuses.clear();
+  currentProjectId = null;
+  onUpdateCallback = null;
+}
+
+/**
+ * Refresh agents (invalidate cache and re-fetch)
+ */
+export function refreshAgents() {
+  if (currentProjectId) {
+    invalidateProjectCache(currentProjectId);
+  }
+  initAgentsListener(currentProjectId);
 }

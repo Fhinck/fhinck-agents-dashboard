@@ -381,6 +381,10 @@ body {
   font-size: 14px;
 }
 
+.empty-state.hidden {
+  display: none;
+}
+
 /* ===================================
    Zoom Controls
    =================================== */
@@ -475,6 +479,165 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 107, 53, 0.5);
+}
+
+/* ===================================
+   Home View (Projects List)
+   =================================== */
+
+.home-view {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 107, 53, 0.03) 0%, transparent 70%),
+    var(--color-bg-dark);
+}
+
+.home-view.hidden {
+  display: none;
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.home-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.home-header p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.project-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all var(--transition-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.project-card:hover {
+  background: rgba(255, 107, 53, 0.08);
+  border-color: var(--color-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(255, 107, 53, 0.15);
+}
+
+.project-card:hover::before {
+  opacity: 1;
+}
+
+.project-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.project-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.project-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.project-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.project-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.project-stat svg {
+  opacity: 0.7;
+}
+
+.project-stat-value {
+  font-weight: 600;
+  color: var(--color-primary-light);
+}
+
+.home-loading,
+.home-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.home-loading.hidden,
+.home-empty.hidden {
+  display: none;
+}
+
+.home-empty svg {
+  opacity: 0.3;
+}
+
+.home-empty p {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+}
+
+.home-empty span {
+  font-size: 14px;
+}
+
+/* Canvas area hidden state */
+.canvas-area.hidden {
+  display: none;
 }
 
 /* ===================================

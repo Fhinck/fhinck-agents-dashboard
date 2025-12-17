@@ -819,3 +819,190 @@ export function updateStatusBadges(total, active) {
     }
   }
 }
+
+// ===================================
+// View Management (Home / Project)
+// ===================================
+
+/**
+ * Show home view (projects list)
+ */
+export function showHomeView() {
+  const homeView = document.getElementById('home-view');
+  const canvasArea = document.getElementById('agents-canvas');
+  const zoomControls = document.getElementById('zoom-controls');
+
+  if (homeView) homeView.classList.remove('hidden');
+  if (canvasArea) canvasArea.classList.add('hidden');
+  if (zoomControls) zoomControls.style.display = 'none';
+
+  // Update sidebar
+  updateSidebarActive('home');
+
+  // Update header title
+  updateHeaderTitle('AI Workforce Fhinck');
+}
+
+/**
+ * Show project view (agents canvas)
+ * @param {string} projectName - Project display name
+ */
+export function showProjectView(projectName) {
+  const homeView = document.getElementById('home-view');
+  const canvasArea = document.getElementById('agents-canvas');
+  const zoomControls = document.getElementById('zoom-controls');
+
+  if (homeView) homeView.classList.add('hidden');
+  if (canvasArea) canvasArea.classList.remove('hidden');
+  if (zoomControls) zoomControls.style.display = 'flex';
+
+  // Update sidebar
+  updateSidebarActive('dashboard');
+
+  // Update header title
+  updateHeaderTitle(projectName || 'AI Workforce Fhinck');
+}
+
+/**
+ * Update sidebar active state
+ * @param {string} view - Active view name
+ */
+function updateSidebarActive(view) {
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.view === view) {
+      item.classList.add('active');
+    }
+  });
+}
+
+/**
+ * Update header title
+ * @param {string} title - New title
+ */
+function updateHeaderTitle(title) {
+  const titleElement = document.querySelector('.dashboard-title');
+  if (titleElement) {
+    titleElement.textContent = title;
+  }
+}
+
+/**
+ * Render projects list on home view
+ * @param {Map} projects - Map of projects
+ * @param {Function} onProjectClick - Callback when project is clicked
+ */
+export function renderProjectsList(projects, onProjectClick) {
+  const container = document.getElementById('projects-container');
+  const loading = document.getElementById('home-loading');
+  const empty = document.getElementById('home-empty');
+
+  if (!container) return;
+
+  // Hide loading
+  if (loading) loading.classList.add('hidden');
+
+  // Check if empty
+  if (projects.size === 0) {
+    container.innerHTML = '';
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+
+  // Hide empty state
+  if (empty) empty.classList.add('hidden');
+
+  // Clear container
+  container.innerHTML = '';
+
+  // Render project cards
+  projects.forEach(project => {
+    const card = createProjectCard(project, onProjectClick);
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Create a project card element
+ * @param {Object} project - Project data
+ * @param {Function} onClick - Click handler
+ * @returns {HTMLElement} Project card element
+ */
+function createProjectCard(project, onClick) {
+  const card = document.createElement('div');
+  card.className = 'project-card';
+  card.dataset.projectId = project.id;
+
+  // Get initials for icon
+  const initials = project.name
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  card.innerHTML = `
+    <div class="project-card-header">
+      <div class="project-icon">${initials}</div>
+      <div class="project-name">${project.name}</div>
+    </div>
+    <div class="project-stats">
+      <div class="project-stat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="7" r="4"/>
+          <path d="M5.5 21a7.5 7.5 0 0113 0"/>
+        </svg>
+        <span class="project-stat-value">${project.agentCount}</span>
+        <span>agentes</span>
+      </div>
+      ${project.lastActivity ? `
+        <div class="project-stat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span>${formatRelativeTime(project.lastActivity)}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  card.addEventListener('click', () => {
+    if (onClick) onClick(project.id);
+  });
+
+  return card;
+}
+
+/**
+ * Format relative time
+ * @param {Date} date - Date to format
+ * @returns {string} Relative time string
+ */
+function formatRelativeTime(date) {
+  if (!date) return '';
+
+  const now = new Date();
+  const diff = now - new Date(date);
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 1) return 'agora';
+  if (minutes < 60) return `${minutes}min`;
+  if (hours < 24) return `${hours}h`;
+  return `${days}d`;
+}
+
+/**
+ * Show home loading state
+ */
+export function showHomeLoading() {
+  const loading = document.getElementById('home-loading');
+  const empty = document.getElementById('home-empty');
+  const container = document.getElementById('projects-container');
+
+  if (loading) loading.classList.remove('hidden');
+  if (empty) empty.classList.add('hidden');
+  if (container) container.innerHTML = '';
+}

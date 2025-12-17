@@ -1,14 +1,19 @@
 /**
  * AI Workforce Fhinck - Main Application
  * Real-time dashboard for AI agents visualization
+ * Supports multiple projects with routing and caching
  */
 
-import { initAgentsListener, onAgentsUpdate, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray } from './agents-store.js';
-import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView } from './renderer.js';
+import { initAgentsListener, onAgentsUpdate, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray, stopAgentsListener } from './agents-store.js';
+import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView, showHomeView, showProjectView, renderProjectsList, showHomeLoading } from './renderer.js';
 import { getQueueStatus, clearQueue, forceStopAnimations } from './animation-queue.js';
+import { initRouter, registerRoutes, navigateHome, navigateToProject, getCurrentProjectId } from './router.js';
+import { fetchProjects, getProjects, getProject, onProjectsUpdate } from './projects-store.js';
+import { clearAllCache, getCacheStats } from './cache-manager.js';
 
 // Application state
 let isInitialized = false;
+let currentView = 'home'; // 'home' | 'project'
 
 /**
  * Initialize the dashboard application
@@ -23,14 +28,24 @@ async function init() {
     // Set up agents update callback
     onAgentsUpdate(handleAgentsUpdate);
 
-    // Start listening to Firestore
-    initAgentsListener();
+    // Set up projects update callback
+    onProjectsUpdate(handleProjectsUpdate);
+
+    // Register route handlers
+    registerRoutes({
+      home: handleHomeRoute,
+      project: handleProjectRoute,
+      notFound: () => navigateHome()
+    });
 
     // Set up sidebar navigation
     setupSidebarNavigation();
 
     // Set up window resize handler
     setupResizeHandler();
+
+    // Initialize router (will trigger initial route)
+    initRouter();
 
     isInitialized = true;
     console.log('✅ Dashboard initialized successfully');
@@ -42,10 +57,70 @@ async function init() {
 }
 
 /**
+ * Handle home route
+ */
+async function handleHomeRoute() {
+  console.log('🏠 Navigating to home');
+  currentView = 'home';
+
+  // Stop any existing agent listener
+  stopAgentsListener();
+
+  // Show home view
+  showHomeView();
+  showHomeLoading();
+
+  // Fetch and display projects
+  try {
+    const projects = await fetchProjects();
+    renderProjectsList(projects, handleProjectClick);
+  } catch (error) {
+    console.error('❌ Error loading projects:', error);
+  }
+
+  // Reset status badges
+  updateStatusBadges(0, 0);
+}
+
+/**
+ * Handle project route
+ * @param {Object} params - Route params { projectId }
+ */
+async function handleProjectRoute(params) {
+  const { projectId } = params;
+  console.log(`📂 Navigating to project: ${projectId}`);
+  currentView = 'project';
+
+  // Get project info for title
+  const project = getProject(projectId);
+  const projectName = project?.name || formatProjectName(projectId);
+
+  // Show project view
+  showProjectView(projectName);
+
+  // Show loading state
+  const loadingState = document.getElementById('loading-state');
+  if (loadingState) loadingState.style.display = 'flex';
+
+  // Start listening to agents for this project
+  initAgentsListener(projectId);
+}
+
+/**
+ * Handle project click from home view
+ * @param {string} projectId - Project ID
+ */
+function handleProjectClick(projectId) {
+  navigateToProject(projectId);
+}
+
+/**
  * Handle agents update from store
  * @param {Map} agents - Updated agents map
  */
 function handleAgentsUpdate(agents) {
+  if (currentView !== 'project') return;
+
   console.log(`📊 Agents updated: ${agents.size} total`);
 
   // Render agents
@@ -56,6 +131,32 @@ function handleAgentsUpdate(agents) {
 }
 
 /**
+ * Handle projects update from store
+ * @param {Map} projects - Updated projects map
+ */
+function handleProjectsUpdate(projects) {
+  if (currentView !== 'home') return;
+
+  console.log(`📂 Projects updated: ${projects.size} total`);
+  renderProjectsList(projects, handleProjectClick);
+}
+
+/**
+ * Format project ID into display name
+ * @param {string} projectId - Raw project ID
+ * @returns {string} - Formatted name
+ */
+function formatProjectName(projectId) {
+  if (!projectId || projectId === 'default') {
+    return 'Projeto Principal';
+  }
+  return projectId
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
  * Setup sidebar navigation
  */
 function setupSidebarNavigation() {
@@ -63,17 +164,9 @@ function setupSidebarNavigation() {
 
   sidebarItems.forEach(item => {
     item.addEventListener('click', () => {
-      // Remove active class from all items
-      sidebarItems.forEach(i => i.classList.remove('active'));
-
-      // Add active class to clicked item
-      item.classList.add('active');
-
-      // Get view name
       const view = item.dataset.view;
-      console.log(`📱 Navigating to: ${view}`);
+      console.log(`📱 Sidebar clicked: ${view}`);
 
-      // Handle navigation (placeholder for future implementation)
       handleNavigation(view);
     });
   });
@@ -84,12 +177,15 @@ function setupSidebarNavigation() {
  * @param {string} view - View name
  */
 function handleNavigation(view) {
-  // For now, just log the navigation
-  // Future: implement different views (Agent Pool, Analytics, Logs, Settings)
-
   switch (view) {
+    case 'home':
+      navigateHome();
+      break;
     case 'dashboard':
-      // Already on dashboard
+      // If on a project, stay there; if on home, do nothing
+      if (currentView === 'home') {
+        console.log('📋 Dashboard view - select a project first');
+      }
       break;
     case 'agent-pool':
       console.log('📋 Agent Pool view - Coming soon');
@@ -116,9 +212,11 @@ function setupResizeHandler() {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      const agents = getAgents();
-      if (agents.size > 0) {
-        renderAgents(agents);
+      if (currentView === 'project') {
+        const agents = getAgents();
+        if (agents.size > 0) {
+          renderAgents(agents);
+        }
       }
     }, 250);
   });
@@ -158,11 +256,21 @@ function showError(message) {
  * Expose utilities for debugging
  */
 window.AIWorkforceFhinck = {
+  // Agent data
   getAgents,
   getAgentsArray,
   getTotalAgentsCount,
   getActiveAgentsCount,
+  // Project data
+  getProjects,
+  getProject,
+  // Navigation
+  navigateHome,
+  navigateToProject,
+  getCurrentProjectId,
+  // State
   isInitialized: () => isInitialized,
+  getCurrentView: () => currentView,
   // Zoom and pan controls
   zoomIn,
   zoomOut,
@@ -173,6 +281,9 @@ window.AIWorkforceFhinck = {
   getQueueStatus,
   clearQueue,
   forceStopAnimations,
+  // Cache controls
+  clearAllCache,
+  getCacheStats,
   // Animation testing
   testFocus: (agentId) => {
     const agents = getAgentsArray();

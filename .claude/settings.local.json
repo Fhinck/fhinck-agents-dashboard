@@ -7,7 +7,9 @@
       "Bash(npm run build:*)",
       "Bash(firebase deploy:*)",
       "Bash(npm install)",
-      "Bash(npm run publish:*)"
+      "Bash(npm run publish:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add multi-project support with routing and caching\n\n- Add router.js for hash-based navigation (/, /#/projeto/{id})\n- Add cache-manager.js with LocalStorage caching (5min TTL)\n- Add projects-store.js to manage project list from agents\n- Update agents-store.js to filter by projectId\n- Add home view with project cards grid\n- Update renderer.js with view management functions\n- Add Firestore composite index for projectId + createdAt\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
     ]
   }
 }

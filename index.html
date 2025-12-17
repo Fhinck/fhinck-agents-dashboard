@@ -42,6 +42,13 @@
     <div class="main-container">
       <!-- Sidebar -->
       <nav class="sidebar">
+        <div class="sidebar-item" data-view="home">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+          <span>Projetos</span>
+        </div>
         <div class="sidebar-item active" data-view="dashboard">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -87,7 +94,30 @@
         </div>
       </nav>
 
-      <!-- Canvas Area -->
+      <!-- Home View (Projects List) -->
+      <main class="home-view hidden" id="home-view">
+        <div class="home-header">
+          <h2>Selecione um Projeto</h2>
+          <p>Escolha um projeto para visualizar os agentes trabalhando</p>
+        </div>
+        <div class="projects-grid" id="projects-container">
+          <!-- Projects loaded dynamically -->
+        </div>
+        <div class="home-loading" id="home-loading">
+          <div class="loading-spinner"></div>
+          <p>Carregando projetos...</p>
+        </div>
+        <div class="home-empty hidden" id="home-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+          <p>Nenhum projeto encontrado</p>
+          <span>Adicione agentes com projectId no Firestore</span>
+        </div>
+      </main>
+
+      <!-- Canvas Area (Project View) -->
       <main class="canvas-area" id="agents-canvas">
         <!-- SVG for connection lines -->
         <svg class="connections-layer" id="connections">
@@ -106,7 +136,7 @@
         </div>
 
         <!-- Empty state -->
-        <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-state hidden" id="empty-state">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
             <circle cx="12" cy="12" r="10"/>
             <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
