@@ -22,7 +22,8 @@
       "Bash(firebase firestore:databases:list:*)",
       "Bash(npm install:*)",
       "Bash(gcloud auth application-default login:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node:*)"
     ]
   }
 }
