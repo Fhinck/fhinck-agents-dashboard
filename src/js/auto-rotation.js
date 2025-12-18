@@ -21,7 +21,7 @@ const CONFIG = {
  */
 export function initAutoRotation(onRotate) {
   onRotateCallback = onRotate;
-  createIndicator();
+  // Indicador visual removido - funcionalidade mantida via API
   console.log('🔄 Auto rotation system initialized');
 }
 

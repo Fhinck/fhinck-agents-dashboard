@@ -12,8 +12,8 @@ import { fetchProjects, getProjects, getProject, getProjectsArray, onProjectsUpd
 import { clearAllCache, getCacheStats } from './cache-manager.js';
 import { initParticles, createBurst } from './particles.js';
 import { initNotifications, showNotification, notifyAgentStart, notifyAgentEnd } from './notifications.js';
-import { initActivityFeed, addActivity, toggleActivityFeed } from './activity-feed.js';
 import { initAutoRotation, setProjects as setRotationProjects, startRotation, stopRotation, isRotationEnabled } from './auto-rotation.js';
+import { initTaskManager, showTaskBar, hideTaskBar, setMainTask, updateProgress, processAgentEvent, clearHistory } from './task-manager.js';
 
 // Application state
 let isInitialized = false;
@@ -34,6 +34,9 @@ async function init() {
 
     // Initialize renderer
     initRenderer();
+
+    // Initialize task manager (barra de tarefa e histórico)
+    initTaskManager();
 
     // Set up agents update callback
     onAgentsUpdate(handleAgentsUpdate);
@@ -119,8 +122,9 @@ async function handleHomeRoute() {
   // Stop any existing agent listener
   stopAgentsListener();
 
-  // Hide activity feed on home
-  toggleActivityFeed(false);
+  // Hide task bar and history sidebar on home
+  hideTaskBar();
+  clearHistory();
 
   // Show home view
   showHomeView();
@@ -169,9 +173,9 @@ async function handleProjectRoute(params) {
   // Show project view
   showProjectView(projectName);
 
-  // Initialize activity feed for this project
-  initActivityFeed();
-  toggleActivityFeed(true);
+  // Show task bar and history sidebar
+  showTaskBar();
+  setMainTask('Aguardando atividade do time...', 0);
 
   // Show loading state
   const loadingState = document.getElementById('loading-state');
@@ -269,15 +273,18 @@ function updateEnhancedBadges(total, active) {
  */
 export function onAgentStatusChange(agent, event, task) {
   if (event === 'start') {
-    // Show notification
-    notifyAgentStart(agent.name, task, agent.color);
-
-    // Add to activity feed
-    addActivity({
+    // Process agent event for history sidebar
+    // prompt = tarefa principal (barra roxa)
+    // action = ação atual sendo feita (histórico)
+    processAgentEvent({
+      agentId: agent.id,
       agentName: agent.name,
-      agentColor: agent.color,
+      agentColor: agent.agentColor || agent.color,
       event: 'start',
-      task
+      task,
+      prompt: agent.prompt,        // Campo 'prompt' para barra roxa principal
+      action: agent.action,        // Campo 'action' para histórico
+      actionDetail: agent.actionDetail
     });
 
     // Increment tasks counter
@@ -285,14 +292,13 @@ export function onAgentStatusChange(agent, event, task) {
     updateEnhancedBadges(getTotalAgentsCount(), getActiveAgentsCount());
 
   } else if (event === 'end') {
-    // Show notification
-    notifyAgentEnd(agent.name, agent.color);
-
-    // Add to activity feed
-    addActivity({
+    // Process agent event for history sidebar (sem toast)
+    processAgentEvent({
+      agentId: agent.id,
       agentName: agent.name,
       agentColor: agent.color,
-      event: 'end'
+      event: 'end',
+      task: ''
     });
   }
 }
@@ -510,6 +516,11 @@ window.AIWorkforceFhinck = {
   createBurst,
   // Notifications
   showNotification,
+  // Task manager
+  setMainTask,
+  updateProgress,
+  processAgentEvent,
+  clearHistory,
   // Animation testing
   testFocus: (agentId) => {
     const agents = getAgentsArray();

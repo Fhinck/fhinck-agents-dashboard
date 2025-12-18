@@ -229,12 +229,17 @@ body.tv-mode .sidebar {
 }
 
 body.tv-mode .main-container {
-  height: 100vh;
+  height: calc(100vh - 70px);
+  margin-top: 70px;
 }
 
-body.tv-mode .canvas-area,
 body.tv-mode .home-view {
-  height: 100vh;
+  height: calc(100vh - 70px);
+  margin-right: 560px;
+}
+
+body.tv-mode .canvas-area {
+  margin-right: 560px;
 }
 
 /* Exit TV Mode Button */
@@ -260,6 +265,8 @@ body.tv-mode .home-view {
 
 body.tv-mode .exit-tv-btn {
   display: flex;
+  top: 85px;
+  left: 20px;
 }
 
 .exit-tv-btn:hover {
@@ -813,5 +820,474 @@ body.tv-mode .activity-task {
 
   .sidebar {
     display: none;
+  }
+}
+
+/* ===================================
+   Task Bar (Barra de Tarefa Principal)
+   =================================== */
+
+.task-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 50%, #6D28D9 100%);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+  gap: 20px;
+  min-height: 50px;
+}
+
+.task-bar.visible {
+  display: flex;
+}
+
+.task-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.task-bar-icon svg {
+  color: white;
+}
+
+.task-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.task-bar-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.task-bar-task {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-bar-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  min-width: 40px;
+  text-align: right;
+}
+
+.progress-bar-container {
+  width: 200px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34D399 0%, #10B981 100%);
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+
+/* ===================================
+   History Sidebar (Sidebar Direita)
+   =================================== */
+
+.history-sidebar {
+  width: 520px;
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 1px solid var(--color-border-light);
+  display: none;
+  flex-direction: column;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.history-sidebar.visible {
+  display: flex;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.history-header svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.history-header span {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.history-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.history-empty svg {
+  opacity: 0.3;
+  width: 48px;
+  height: 48px;
+}
+
+.history-empty p {
+  font-size: 16px;
+}
+
+.history-empty.hidden {
+  display: none;
+}
+
+/* Agent History Group */
+.history-agent-group {
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+}
+
+.history-agent-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.history-agent-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.history-agent-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-agent-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.history-agent-status {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-agent-status.working {
+  color: #34D399;
+}
+
+.history-agent-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.history-agent-status.working .status-dot {
+  background: #34D399;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* History Items */
+.history-items {
+  padding: 10px 0;
+}
+
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 18px;
+  transition: background 0.2s ease;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.history-item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.history-item-icon.read {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3B82F6;
+}
+
+.history-item-icon.write {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22C55E;
+}
+
+.history-item-icon.execute {
+  background: rgba(168, 85, 247, 0.2);
+  color: #A855F7;
+}
+
+.history-item-icon.call {
+  background: rgba(251, 191, 36, 0.2);
+  color: #FBBF24;
+}
+
+.history-item-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.history-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-action {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.history-item-detail {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  /* Permite múltiplas linhas para ler melhor */
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-item-time {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ===================================
+   Layout Adjustments for New Sidebar
+   =================================== */
+
+/* Quando a sidebar de histórico está visível */
+.main-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* TV Mode - mostrar task bar e history sidebar */
+body.tv-mode .task-bar {
+  display: flex !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 16px 30px;
+}
+
+body.tv-mode .task-bar-task {
+  font-size: 18px;
+}
+
+body.tv-mode .task-bar-label {
+  font-size: 13px;
+}
+
+body.tv-mode .progress-label {
+  font-size: 18px;
+}
+
+body.tv-mode .progress-bar-container {
+  width: 300px;
+  height: 12px;
+}
+
+body.tv-mode .history-sidebar {
+  display: flex !important;
+  position: fixed;
+  top: 70px;
+  right: 0;
+  bottom: 0;
+  width: 560px;
+  z-index: 99;
+}
+
+body.tv-mode .history-header {
+  padding: 24px 28px;
+}
+
+body.tv-mode .history-header span {
+  font-size: 20px;
+}
+
+body.tv-mode .history-agent-avatar {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+}
+
+body.tv-mode .history-agent-name {
+  font-size: 18px;
+}
+
+body.tv-mode .history-agent-status {
+  font-size: 15px;
+}
+
+body.tv-mode .history-item-action {
+  font-size: 17px;
+}
+
+body.tv-mode .history-item-detail {
+  font-size: 16px;
+  -webkit-line-clamp: 5;
+}
+
+body.tv-mode .history-item-time {
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1600px) {
+  .history-sidebar {
+    width: 450px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .history-sidebar {
+    width: 400px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .history-sidebar {
+    width: 360px;
+  }
+
+  .progress-bar-container {
+    width: 150px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .history-sidebar {
+    display: none !important;
+  }
+
+  .task-bar-task {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .task-bar {
+    padding: 10px 16px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .task-bar-progress {
+    width: 100%;
+  }
+
+  .progress-bar-container {
+    flex: 1;
   }
 }

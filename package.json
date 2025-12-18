@@ -10,7 +10,12 @@
     "preview": "vite preview",
     "publish": "vite build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules",
-    "deploy:all": "vite build && firebase deploy"
+    "deploy:all": "vite build && firebase deploy",
+    "test:sim": "node tests/simulate-agents.js",
+    "test:sim:full": "node tests/simulate-agents.js --scenario=full",
+    "test:sim:loop": "node tests/simulate-agents.js --loop",
+    "test:sim:fast": "node tests/simulate-agents.js --fast",
+    "test:interactive": "node tests/interactive.js"
   },
   "dependencies": {
     "firebase": "^10.7.1"

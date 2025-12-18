@@ -431,7 +431,8 @@ function createAgentElement(agent, position) {
   element.dataset.agentId = agent.id;
 
   // Set agent color and RGB values for animations
-  const color = agent.color || '#FF6B35';
+  // agentColor comes from Firestore, color is fallback
+  const color = agent.agentColor || agent.color || '#FF6B35';
   const rgb = hexToRgb(color);
   element.style.setProperty('--agent-color', color);
   element.style.setProperty('--agent-r', rgb.r);
@@ -684,8 +685,8 @@ export async function animateFocus(agentId, task) {
       }
     });
 
-    // Update info panel
-    updateAgentInfo(agent, task);
+    // Info panel desabilitado - informação vai para sidebar de histórico
+    // updateAgentInfo(agent, task);
 
     // Resolve after transition
     setTimeout(resolve, ZOOM_CONFIG.transitionDuration);
@@ -755,7 +756,7 @@ function updateAgentInfo(agent, task) {
 
   infoPanel.innerHTML = `
     <div class="current-task">
-      <div class="task-agent" style="color: ${agent?.color || '#FF6B35'}">
+      <div class="task-agent" style="color: ${agent?.agentColor || agent?.color || '#FF6B35'}">
         ${agent?.name || 'Unknown Agent'}
       </div>
       <span class="task-label">${task || 'Processing...'}</span>
