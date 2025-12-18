@@ -246,11 +246,11 @@
 
 .activity-feed {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
-  width: 280px;
-  max-height: calc(100% - 40px);
-  background: rgba(0, 0, 0, 0.6);
+  width: 300px;
+  max-height: 280px;
+  background: rgba(0, 0, 0, 0.7);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   backdrop-filter: blur(10px);

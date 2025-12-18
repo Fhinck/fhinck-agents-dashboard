@@ -341,14 +341,25 @@ export function renderAgents(agents) {
 
   const agentsArray = [...agents.values()];
 
-  // Separate Orchestrator from other agents
-  const orchestratorIndex = agentsArray.findIndex(a => a.id === 'orchestrator');
+  // Find central agent (orchestrator, master, or first agent)
+  const orchestratorIndex = agentsArray.findIndex(a =>
+    a.id === 'orchestrator' ||
+    a.id.toLowerCase().includes('master') ||
+    a.id.toLowerCase().includes('orchestrator') ||
+    a.name?.toLowerCase().includes('master') ||
+    a.name?.toLowerCase().includes('orchestrator')
+  );
+
   let orchestrator = null;
   let otherAgents = agentsArray;
 
   if (orchestratorIndex !== -1) {
     orchestrator = agentsArray[orchestratorIndex];
-    otherAgents = agentsArray.filter(a => a.id !== 'orchestrator');
+    otherAgents = agentsArray.filter(a => a.id !== orchestrator.id);
+  } else if (agentsArray.length > 0) {
+    // Use first agent as central node
+    orchestrator = agentsArray[0];
+    otherAgents = agentsArray.slice(1);
   }
 
   // Calculate positions: Orchestrator in center, others in circle
@@ -435,6 +446,10 @@ function createAgentElement(agent, position) {
     element.classList.add('working');
   }
 
+  // Create circle container
+  const circleDiv = document.createElement('div');
+  circleDiv.className = 'agent-circle';
+
   // Icon - use SVG if available, otherwise show initials
   const iconDiv = document.createElement('div');
   iconDiv.className = 'agent-icon';
@@ -451,7 +466,8 @@ function createAgentElement(agent, position) {
       .toUpperCase();
     iconDiv.innerHTML = `<span class="agent-initials">${initials}</span>`;
   }
-  element.appendChild(iconDiv);
+  circleDiv.appendChild(iconDiv);
+  element.appendChild(circleDiv);
 
   // Name
   const nameDiv = document.createElement('div');
@@ -465,11 +481,11 @@ function createAgentElement(agent, position) {
   typeDiv.textContent = agent.type;
   element.appendChild(typeDiv);
 
-  // Working indicator
+  // Working indicator (inside circle)
   if (agent.status === 'working') {
     const indicator = document.createElement('div');
     indicator.className = 'working-indicator';
-    element.appendChild(indicator);
+    circleDiv.appendChild(indicator);
   }
 
   // Add entrance animation

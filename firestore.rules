@@ -2,10 +2,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Agents: public read/write (TEMPORARY - secure after setup)
+    // Projects collection and agents subcollection
+    match /project/{projectId} {
+      allow read: if true;
+      allow write: if true;
+
+      // Agents subcollection inside project
+      match /agents/{agentId} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // Legacy agents collection (keep for backward compatibility)
     match /agents/{agentId} {
       allow read: if true;
-      allow write: if true;  // TODO: Change to request.auth != null after initial setup
+      allow write: if true;
     }
 
     // Activity: public read, authenticated write

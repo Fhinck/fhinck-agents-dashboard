@@ -135,6 +135,18 @@ async function handleHomeRoute() {
     setRotationProjects(getProjectsArray());
   } catch (error) {
     console.error('❌ Error loading projects:', error);
+    // Hide loading and show empty state on error
+    const loading = document.getElementById('home-loading');
+    const empty = document.getElementById('home-empty');
+    if (loading) loading.classList.add('hidden');
+    if (empty) {
+      empty.classList.remove('hidden');
+      empty.innerHTML = `
+        <div class="empty-icon">⚠️</div>
+        <p>Erro ao carregar projetos</p>
+        <p style="font-size: 12px; opacity: 0.7;">${error.message || 'Verifique o console para mais detalhes'}</p>
+      `;
+    }
   }
 
   // Reset status badges
@@ -289,7 +301,7 @@ export function onAgentStatusChange(agent, event, task) {
  * Setup sidebar navigation
  */
 function setupSidebarNavigation() {
-  const sidebarItems = document.querySelectorAll('.sidebar-item');
+  const sidebarItems = document.querySelectorAll('.sidebar-item[data-view]');
 
   sidebarItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -298,6 +310,81 @@ function setupSidebarNavigation() {
 
       handleNavigation(view);
     });
+  });
+
+  // Setup sidebar toggle
+  setupSidebarToggle();
+
+  // Setup TV mode toggle
+  setupTVModeToggle();
+}
+
+/**
+ * Setup sidebar collapse toggle
+ */
+function setupSidebarToggle() {
+  const toggleBtn = document.getElementById('sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      toggleBtn.title = isCollapsed ? 'Expandir menu' : 'Recolher menu';
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
+    });
+
+    // Restore saved state
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      sidebar.classList.add('collapsed');
+      toggleBtn.title = 'Expandir menu';
+    }
+  }
+}
+
+/**
+ * Setup TV Mode toggle
+ */
+function setupTVModeToggle() {
+  const tvModeBtn = document.getElementById('tv-mode-btn');
+  const exitTvBtn = document.getElementById('exit-tv-btn');
+
+  const enterTvMode = () => {
+    document.body.classList.add('tv-mode');
+    // Request browser fullscreen
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
+
+  const exitTvMode = () => {
+    document.body.classList.remove('tv-mode');
+    // Exit browser fullscreen
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  if (tvModeBtn) {
+    tvModeBtn.addEventListener('click', enterTvMode);
+  }
+
+  if (exitTvBtn) {
+    exitTvBtn.addEventListener('click', exitTvMode);
+  }
+
+  // ESC key to exit TV mode
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('tv-mode')) {
+      exitTvMode();
+    }
+  });
+
+  // Handle browser fullscreen change
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && document.body.classList.contains('tv-mode')) {
+      document.body.classList.remove('tv-mode');
+    }
   });
 }
 

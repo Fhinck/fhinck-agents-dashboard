@@ -141,6 +141,24 @@ body {
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 14px;
+}
+
+.sidebar.collapsed .sidebar-item span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-toggle svg {
+  transform: rotate(180deg);
 }
 
 .sidebar-item {
@@ -176,8 +194,124 @@ body {
   opacity: 1;
 }
 
+.sidebar-toggle {
+  margin-top: auto;
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 10px;
+}
+
+.sidebar-toggle svg {
+  transition: transform 0.3s ease;
+}
+
 .sidebar-spacer {
   flex: 1;
+}
+
+/* ===================================
+   TV Mode / Fullscreen
+   =================================== */
+
+.tv-mode-btn {
+  border-top: 1px solid var(--color-border-light);
+  margin-top: 10px;
+  padding-top: 14px !important;
+}
+
+.tv-mode-btn:hover {
+  background: rgba(255, 107, 53, 0.15) !important;
+}
+
+/* TV Mode Active State */
+body.tv-mode .dashboard-header,
+body.tv-mode .sidebar {
+  display: none !important;
+}
+
+body.tv-mode .main-container {
+  height: 100vh;
+}
+
+body.tv-mode .canvas-area,
+body.tv-mode .home-view {
+  height: 100vh;
+}
+
+/* Exit TV Mode Button */
+.exit-tv-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+  z-index: 1000;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+body.tv-mode .exit-tv-btn {
+  display: flex;
+}
+
+.exit-tv-btn:hover {
+  background: rgba(255, 107, 53, 0.3);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
+}
+
+.exit-tv-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* TV Mode - Larger elements for visibility */
+body.tv-mode .agent-node {
+  width: 160px;
+}
+
+body.tv-mode .agent-node .agent-circle {
+  width: 70px;
+  height: 70px;
+}
+
+body.tv-mode .agent-name {
+  font-size: 14px;
+  max-width: 150px;
+}
+
+body.tv-mode .agent-initials {
+  font-size: 22px;
+}
+
+body.tv-mode .activity-feed {
+  width: 340px;
+  max-height: 320px;
+}
+
+body.tv-mode .activity-feed-header {
+  font-size: 15px;
+}
+
+body.tv-mode .activity-item {
+  padding: 12px 18px;
+}
+
+body.tv-mode .activity-agent-name {
+  font-size: 14px;
+}
+
+body.tv-mode .activity-task {
+  font-size: 12px;
 }
 
 /* ===================================

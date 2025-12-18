@@ -1,10 +1,10 @@
 /**
  * Projects Store
- * Manages list of projects extracted from agents collection
+ * Manages list of projects from Firestore 'project' collection
  */
 
 import { db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, getCountFromServer } from 'firebase/firestore';
 import { getCache, setCache, invalidateProjectsCache } from './cache-manager.js';
 
 // Store state
@@ -13,8 +13,8 @@ let isLoading = false;
 let onUpdateCallback = null;
 
 /**
- * Fetch all projects from Firestore
- * Extracts unique projectIds from agents collection
+ * Fetch all projects from Firestore 'project' collection
+ * Each project has a subcollection 'agents'
  * @param {boolean} forceRefresh - Skip cache and fetch fresh data
  * @returns {Promise<Map>} - Map of projects
  */
@@ -34,42 +34,37 @@ export async function fetchProjects(forceRefresh = false) {
   console.log('🔄 Fetching projects from Firestore...');
 
   try {
-    const agentsRef = collection(db, 'agents');
-    const q = query(agentsRef, orderBy('createdAt', 'asc'));
-    const snapshot = await getDocs(q);
+    const projectsRef = collection(db, 'project');
+    // Simple query without orderBy to avoid index requirement
+    const snapshot = await getDocs(projectsRef);
 
-    // Group agents by projectId
     const projectsMap = new Map();
 
-    console.log(`📊 Processing ${snapshot.size} agents...`);
+    console.log(`📊 Found ${snapshot.size} projects`);
 
-    snapshot.forEach(doc => {
-      const agent = { id: doc.id, ...doc.data() };
-      const projectId = agent.projectId || 'default';
+    // Process each project and count agents
+    for (const doc of snapshot.docs) {
+      const projectData = doc.data();
+      const projectId = doc.id;
 
-      console.log(`   Agent: ${agent.name} | projectId: "${projectId}"`);
+      console.log(`   📁 Project: ${projectId} | name: "${projectData.projectName}"`);
 
-      if (!projectsMap.has(projectId)) {
-        projectsMap.set(projectId, {
-          id: projectId,
-          name: formatProjectName(projectId),
-          agentCount: 0,
-          agents: [],
-          lastActivity: null
-        });
-        console.log(`   📁 New project found: "${projectId}"`);
-      }
+      // Count agents in subcollection
+      const agentsRef = collection(db, 'project', projectId, 'agents');
+      const agentsSnapshot = await getCountFromServer(agentsRef);
+      const agentCount = agentsSnapshot.data().count;
 
-      const project = projectsMap.get(projectId);
-      project.agentCount++;
-      project.agents.push(agent.id);
+      projectsMap.set(projectId, {
+        id: projectId,
+        name: projectData.projectName || formatProjectName(projectId),
+        agentCount: agentCount,
+        createdAt: projectData.createdAt,
+        updatedAt: projectData.updatedAt,
+        lastActivity: projectData.updatedAt?.toDate?.() || projectData.updatedAt || null
+      });
 
-      // Track last activity
-      const activityTime = agent.lastActivityAt?.toDate?.() || agent.lastActivityAt;
-      if (activityTime && (!project.lastActivity || activityTime > project.lastActivity)) {
-        project.lastActivity = activityTime;
-      }
-    });
+      console.log(`      Agents count: ${agentCount}`);
+    }
 
     projects = projectsMap;
 
@@ -77,7 +72,7 @@ export async function fetchProjects(forceRefresh = false) {
     const projectsArray = Array.from(projects.values());
     setCache('projects', projectsArray);
 
-    console.log(`✅ Found ${projects.size} projects`);
+    console.log(`✅ Loaded ${projects.size} projects`);
 
     if (onUpdateCallback) onUpdateCallback(projects);
 

@@ -8,37 +8,38 @@
 
 .agent-node {
   position: absolute;
-  width: 80px;
-  height: 80px;
+  width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.agent-node .agent-circle {
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: 2px solid var(--agent-color, #FF6B35);
   background: radial-gradient(
     circle at center,
-    rgba(255, 107, 53, 0.15) 0%,
-    rgba(255, 107, 53, 0.05) 70%,
+    rgba(255, 107, 53, 0.2) 0%,
+    rgba(255, 107, 53, 0.08) 70%,
     transparent 100%
   );
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
-
-.agent-node::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: transparent;
   transition: all 0.3s ease;
+  position: relative;
 }
 
-.agent-node:hover:not(.focused):not(.dimmed) {
-  transform: translate(-50%, -50%) scale(1.1);
+.agent-node:hover:not(.focused):not(.dimmed) .agent-circle {
+  transform: scale(1.1);
   box-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
 }
 
@@ -47,8 +48,8 @@
    =================================== */
 
 .agent-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,29 +63,33 @@
   height: 100%;
 }
 
+.agent-initials {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--agent-color, #FF6B35);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .agent-name {
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--color-text-primary);
   text-align: center;
-  margin-top: 4px;
-  opacity: 0.8;
-  max-width: 70px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  opacity: 0.95;
+  max-width: 130px;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   transition: all 0.3s ease;
 }
 
 .agent-type {
-  font-size: 7px;
+  font-size: 10px;
   color: var(--color-text-muted);
   text-align: center;
   opacity: 0;
-  max-width: 70px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 130px;
   transition: all 0.3s ease;
 }
 
@@ -93,15 +98,17 @@
    =================================== */
 
 .agent-node.dimmed {
-  opacity: 0.4;
-  transform: translate(-50%, -50%) scale(0.5);
-  filter: blur(0px);
+  opacity: 0.3;
+  transform: translate(-50%, -50%) scale(0.6);
   pointer-events: none;
 }
 
-.agent-node.dimmed .agent-icon,
-.agent-node.dimmed .agent-name {
+.agent-node.dimmed .agent-circle {
   opacity: 0.5;
+}
+
+.agent-node.dimmed .agent-name {
+  opacity: 0.4;
 }
 
 .agent-node.dimmed .agent-type {
@@ -113,12 +120,16 @@
    =================================== */
 
 .agent-node.focused {
-  width: 180px;
-  height: 180px;
+  width: 200px;
   z-index: 100;
+}
+
+.agent-node.focused .agent-circle {
+  width: 100px;
+  height: 100px;
   background: radial-gradient(
     circle at center,
-    rgba(var(--agent-r, 255), var(--agent-g, 107), var(--agent-b, 53), 0.25) 0%,
+    rgba(var(--agent-r, 255), var(--agent-g, 107), var(--agent-b, 53), 0.3) 0%,
     rgba(var(--agent-r, 255), var(--agent-g, 107), var(--agent-b, 53), 0.1) 50%,
     rgba(var(--agent-r, 255), var(--agent-g, 107), var(--agent-b, 53), 0.02) 100%
   );
@@ -129,25 +140,21 @@
 }
 
 .agent-node.focused .agent-icon {
-  width: 56px;
-  height: 56px;
-  margin-bottom: 12px;
+  width: 48px;
+  height: 48px;
 }
 
 .agent-node.focused .agent-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   opacity: 1;
-  max-width: 160px;
-  white-space: normal;
-  line-height: 1.2;
+  max-width: 180px;
 }
 
 .agent-node.focused .agent-type {
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.8;
-  max-width: 160px;
-  margin-top: 4px;
+  max-width: 180px;
   color: var(--agent-color);
 }
 
@@ -155,7 +162,7 @@
    Agent Node - Speaking Animation
    =================================== */
 
-.agent-node.speaking {
+.agent-node.speaking .agent-circle {
   border: 3px solid var(--agent-color, #FF6B35);
   animation: speaking-glow 2s ease-in-out infinite;
 }
@@ -181,7 +188,7 @@
 }
 
 /* First pulsing wave ring */
-.agent-node.speaking::before {
+.agent-node.speaking .agent-circle::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -197,7 +204,7 @@
 }
 
 /* Second pulsing wave ring (delayed) */
-.agent-node.speaking::after {
+.agent-node.speaking .agent-circle::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -227,7 +234,7 @@
    Agent Node - Working Indicator
    =================================== */
 
-.agent-node.working:not(.focused) {
+.agent-node.working:not(.focused) .agent-circle {
   animation: subtle-pulse 2s ease-in-out infinite;
 }
 
@@ -242,14 +249,15 @@
 
 .working-indicator {
   position: absolute;
-  bottom: -8px;
+  bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: var(--agent-color, #FF6B35);
   border-radius: 50%;
   animation: blink 1s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--agent-color, #FF6B35);
 }
 
 @keyframes blink {

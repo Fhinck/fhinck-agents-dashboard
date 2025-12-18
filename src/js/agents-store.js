@@ -5,7 +5,7 @@
  */
 
 import { db } from './firebase-config.js';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { queueAnimation, clearQueue } from './animation-queue.js';
 import { getCache, setCache, invalidateProjectCache } from './cache-manager.js';
 
@@ -19,6 +19,7 @@ let currentProjectId = null;
 
 /**
  * Initialize the agents listener for a specific project
+ * Listens to subcollection: project/{projectId}/agents
  * @param {string} projectId - Project ID to filter agents
  */
 export function initAgentsListener(projectId = null) {
@@ -30,27 +31,22 @@ export function initAgentsListener(projectId = null) {
   previousStatuses.clear();
   clearQueue();
 
-  currentProjectId = projectId;
-
-  const agentsRef = collection(db, 'agents');
-  let q;
-
-  if (projectId && projectId !== 'default') {
-    // Filter by specific projectId
-    q = query(
-      agentsRef,
-      where('projectId', '==', projectId),
-      orderBy('createdAt', 'asc')
-    );
-    console.log(`👀 Listening to agents for project: ${projectId}`);
-  } else {
-    // For 'default' or no projectId, get all agents (they likely don't have projectId field)
-    q = query(agentsRef, orderBy('createdAt', 'asc'));
-    console.log('👀 Listening to all agents (default project)...');
+  if (!projectId) {
+    console.warn('⚠️ No projectId provided, cannot listen to agents');
+    return;
   }
 
+  currentProjectId = projectId;
+
+  // Listen to agents subcollection: project/{projectId}/agents
+  const agentsRef = collection(db, 'project', projectId, 'agents');
+  const q = query(agentsRef, orderBy('createdAt', 'asc'));
+
+  console.log(`👀 Listening to agents for project: ${projectId}`);
+  console.log(`   Path: project/${projectId}/agents`);
+
   // Check cache for initial data
-  const cacheKey = projectId ? `agents_${projectId}` : 'agents_all';
+  const cacheKey = `agents_${projectId}`;
   const cached = getCache(cacheKey);
   if (cached && cached.length > 0) {
     console.log(`📦 Loading ${cached.length} agents from cache`);
@@ -67,9 +63,12 @@ export function initAgentsListener(projectId = null) {
     console.log(`📡 Firestore snapshot received: ${snapshot.docChanges().length} changes`);
 
     snapshot.docChanges().forEach((change) => {
+      const docData = change.doc.data();
       const agent = {
         id: change.doc.id,
-        ...change.doc.data()
+        // Map fields from new structure
+        name: docData.agentName || docData.name || change.doc.id,
+        ...docData
       };
 
       console.log(`   📄 Change type: ${change.type}, Agent: ${agent.id}, Status: ${agent.status}`);
@@ -97,11 +96,7 @@ export function initAgentsListener(projectId = null) {
     }
   }, (error) => {
     console.error('❌ Error listening to agents:', error);
-    // If index not found, provide helpful message
-    if (error.code === 'failed-precondition') {
-      console.error('💡 You may need to create a composite index for projectId + createdAt');
-      console.error('   Run: firebase deploy --only firestore:indexes');
-    }
+    console.error(`   Path: project/${projectId}/agents`);
   });
 }
 
