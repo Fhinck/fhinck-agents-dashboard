@@ -6,13 +6,15 @@
 // Route patterns
 const ROUTES = {
   HOME: '',
-  PROJECT: 'projeto'
+  PROJECT: 'projeto',
+  TASKS: 'tasks'
 };
 
 // Registered route handlers
 let routeHandlers = {
   home: null,
   project: null,
+  tasks: null,
   notFound: null
 };
 
@@ -34,6 +36,12 @@ export function parseRoute() {
       route: 'project',
       params: { projectId: decodeURIComponent(projectMatch[1]) }
     };
+  }
+
+  // Parse /tasks
+  const tasksMatch = hash.match(/^\/?tasks$/);
+  if (tasksMatch) {
+    return { route: 'tasks', params: {} };
   }
 
   // Unknown route
@@ -64,6 +72,13 @@ export function navigateToProject(projectId) {
 }
 
 /**
+ * Navigate to tasks
+ */
+export function navigateToTasks() {
+  window.location.hash = '/tasks';
+}
+
+/**
  * Register route handlers
  * @param {Object} handlers - { home: fn, project: fn, notFound: fn }
  */
@@ -85,6 +100,9 @@ function handleRouteChange() {
       break;
     case 'project':
       if (routeHandlers.project) routeHandlers.project(params);
+      break;
+    case 'tasks':
+      if (routeHandlers.tasks) routeHandlers.tasks(params);
       break;
     default:
       if (routeHandlers.notFound) {

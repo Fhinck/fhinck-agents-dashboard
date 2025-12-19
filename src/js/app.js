@@ -5,19 +5,20 @@
  */
 
 import { initAgentsListener, onAgentsUpdate, onStatusChange, getAgents, getTotalAgentsCount, getActiveAgentsCount, getAgentsArray, stopAgentsListener, getAgent } from './agents-store.js';
-import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView, showHomeView, showProjectView, renderProjectsList, showHomeLoading } from './renderer.js';
+import { initRenderer, renderAgents, updateStatusBadges, animateFocus, animateUnfocus, zoomIn, zoomOut, resetZoom, centerView, fitToView, showHomeView, showProjectView, showTasksView, renderProjectsList, showHomeLoading, renderTasksList, showTasksLoading } from './renderer.js';
 import { getQueueStatus, clearQueue, forceStopAnimations } from './animation-queue.js';
-import { initRouter, registerRoutes, navigateHome, navigateToProject, getCurrentProjectId } from './router.js';
+import { initRouter, registerRoutes, navigateHome, navigateToProject, navigateToTasks, getCurrentProjectId } from './router.js';
 import { fetchProjects, getProjects, getProject, getProjectsArray, onProjectsUpdate } from './projects-store.js';
 import { clearAllCache, getCacheStats } from './cache-manager.js';
 import { initParticles, createBurst } from './particles.js';
 import { initNotifications, showNotification, notifyAgentStart, notifyAgentEnd } from './notifications.js';
 import { initAutoRotation, setProjects as setRotationProjects, startRotation, stopRotation, isRotationEnabled } from './auto-rotation.js';
 import { initTaskManager, showTaskBar, hideTaskBar, setMainTask, updateProgress, processAgentEvent, clearHistory } from './task-manager.js';
+import { fetchNotionTasks, getTasks, getPriorityColor, getStatusColor } from './notion-tasks-store.js';
 
 // Application state
 let isInitialized = false;
-let currentView = 'home'; // 'home' | 'project'
+let currentView = 'home'; // 'home' | 'project' | 'tasks'
 let tasksToday = 0;
 let clockInterval = null;
 
@@ -51,6 +52,7 @@ async function init() {
     registerRoutes({
       home: handleHomeRoute,
       project: handleProjectRoute,
+      tasks: handleTasksRoute,
       notFound: () => navigateHome()
     });
 
@@ -186,6 +188,73 @@ async function handleProjectRoute(params) {
 
   // Start listening to agents for this project
   initAgentsListener(projectId);
+}
+
+/**
+ * Handle tasks route
+ */
+async function handleTasksRoute() {
+  console.log('📋 Navigating to tasks');
+  currentView = 'tasks';
+
+  // Stop any existing agent listener
+  stopAgentsListener();
+
+  // Hide task bar and history sidebar on tasks view
+  hideTaskBar();
+  clearHistory();
+
+  // Show tasks view
+  showTasksView();
+  showTasksLoading();
+
+  // Setup refresh button
+  const refreshBtn = document.getElementById('refresh-tasks-btn');
+  if (refreshBtn) {
+    refreshBtn.onclick = () => loadTasks(true);
+  }
+
+  // Fetch and display tasks
+  await loadTasks();
+
+  // Reset status badges
+  updateEnhancedBadges(0, 0);
+}
+
+/**
+ * Load tasks from Notion
+ * @param {boolean} forceRefresh - Force refresh
+ */
+async function loadTasks(forceRefresh = false) {
+  showTasksLoading();
+
+  try {
+    const tasks = await fetchNotionTasks(forceRefresh);
+    renderTasksList(tasks, handleTaskClick);
+  } catch (error) {
+    console.error('❌ Error loading tasks:', error);
+    const errorEl = document.getElementById('tasks-error');
+    const errorMsg = document.getElementById('tasks-error-message');
+    const loading = document.getElementById('tasks-loading');
+    const empty = document.getElementById('tasks-empty');
+
+    if (loading) loading.classList.add('hidden');
+    if (empty) empty.classList.add('hidden');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsg) errorMsg.textContent = error.message || 'Verifique o console para mais detalhes';
+    }
+  }
+}
+
+/**
+ * Handle task click
+ * @param {Object} task - Task object
+ */
+function handleTaskClick(task) {
+  if (task.url) {
+    window.open(task.url, '_blank');
+  }
 }
 
 /**
@@ -408,9 +477,12 @@ function handleNavigation(view) {
       break;
     case 'dashboard':
       // If on a project, stay there; if on home, do nothing
-      if (currentView === 'home') {
+      if (currentView === 'home' || currentView === 'tasks') {
         console.log('📋 Dashboard view - select a project first');
       }
+      break;
+    case 'tasks':
+      navigateToTasks();
       break;
     case 'agent-pool':
       console.log('📋 Agent Pool view - Coming soon');

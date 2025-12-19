@@ -903,10 +903,12 @@ export function updateStatusBadges(total, active) {
 export function showHomeView() {
   const homeView = document.getElementById('home-view');
   const canvasArea = document.getElementById('agents-canvas');
+  const tasksView = document.getElementById('tasks-view');
   const zoomControls = document.getElementById('zoom-controls');
 
   if (homeView) homeView.classList.remove('hidden');
   if (canvasArea) canvasArea.classList.add('hidden');
+  if (tasksView) tasksView.classList.add('hidden');
   if (zoomControls) zoomControls.style.display = 'none';
 
   // Update sidebar
@@ -923,10 +925,12 @@ export function showHomeView() {
 export function showProjectView(projectName) {
   const homeView = document.getElementById('home-view');
   const canvasArea = document.getElementById('agents-canvas');
+  const tasksView = document.getElementById('tasks-view');
   const zoomControls = document.getElementById('zoom-controls');
 
   if (homeView) homeView.classList.add('hidden');
   if (canvasArea) canvasArea.classList.remove('hidden');
+  if (tasksView) tasksView.classList.add('hidden');
   if (zoomControls) zoomControls.style.display = 'flex';
 
   // Update sidebar
@@ -934,6 +938,27 @@ export function showProjectView(projectName) {
 
   // Update header title
   updateHeaderTitle(projectName || 'AI Workforce Fhinck');
+}
+
+/**
+ * Show tasks view (Notion tasks)
+ */
+export function showTasksView() {
+  const homeView = document.getElementById('home-view');
+  const canvasArea = document.getElementById('agents-canvas');
+  const tasksView = document.getElementById('tasks-view');
+  const zoomControls = document.getElementById('zoom-controls');
+
+  if (homeView) homeView.classList.add('hidden');
+  if (canvasArea) canvasArea.classList.add('hidden');
+  if (tasksView) tasksView.classList.remove('hidden');
+  if (zoomControls) zoomControls.style.display = 'none';
+
+  // Update sidebar
+  updateSidebarActive('tasks');
+
+  // Update header title
+  updateHeaderTitle('Tarefas');
 }
 
 /**
@@ -1078,4 +1103,191 @@ export function showHomeLoading() {
   if (loading) loading.classList.remove('hidden');
   if (empty) empty.classList.add('hidden');
   if (container) container.innerHTML = '';
+}
+
+// ===================================
+// Tasks View (Notion)
+// ===================================
+
+/**
+ * Show tasks loading state
+ */
+export function showTasksLoading() {
+  const loading = document.getElementById('tasks-loading');
+  const empty = document.getElementById('tasks-empty');
+  const error = document.getElementById('tasks-error');
+  const container = document.getElementById('tasks-container');
+
+  if (loading) loading.classList.remove('hidden');
+  if (empty) empty.classList.add('hidden');
+  if (error) error.classList.add('hidden');
+  if (container) container.innerHTML = '';
+}
+
+/**
+ * Render tasks list
+ * @param {Array} tasks - Array of tasks
+ * @param {Function} onTaskClick - Click handler
+ */
+export function renderTasksList(tasks, onTaskClick) {
+  const container = document.getElementById('tasks-container');
+  const loading = document.getElementById('tasks-loading');
+  const empty = document.getElementById('tasks-empty');
+  const error = document.getElementById('tasks-error');
+
+  if (!container) return;
+
+  // Hide loading and error
+  if (loading) loading.classList.add('hidden');
+  if (error) error.classList.add('hidden');
+
+  // Check if empty
+  if (!tasks || tasks.length === 0) {
+    container.innerHTML = '';
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+
+  // Hide empty state
+  if (empty) empty.classList.add('hidden');
+
+  // Clear container
+  container.innerHTML = '';
+
+  // Render task cards
+  tasks.forEach(task => {
+    const card = createTaskCard(task, onTaskClick);
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Create a task card element
+ * @param {Object} task - Task data
+ * @param {Function} onClick - Click handler
+ * @returns {HTMLElement} Task card element
+ */
+function createTaskCard(task, onClick) {
+  const card = document.createElement('div');
+  card.className = 'task-card';
+  card.dataset.taskId = task.id;
+
+  // Get priority color
+  const priorityColor = getPriorityColorLocal(task.priority);
+  const statusColor = getStatusColorLocal(task.status);
+
+  // Format date
+  const startDate = task.startDate ? formatTaskDate(task.startDate) : null;
+
+  // Build stakeholders display
+  const stakeholdersHtml = task.stakeholders && task.stakeholders.length > 0
+    ? `<div class="task-stakeholders">
+        ${task.stakeholders.map(s => `<span class="task-stakeholder">${s}</span>`).join('')}
+       </div>`
+    : '';
+
+  // Build type badges
+  const typeHtml = task.type && task.type.length > 0
+    ? `<div class="task-types">
+        ${task.type.map(t => `<span class="task-type-badge">${t}</span>`).join('')}
+       </div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="task-card-header">
+      <div class="task-name">${task.name}</div>
+      ${task.priority ? `<span class="task-priority" style="background-color: ${priorityColor}">${task.priority}</span>` : ''}
+    </div>
+    <div class="task-card-body">
+      <div class="task-meta">
+        ${task.status ? `<span class="task-status" style="background-color: ${statusColor}">${task.status}</span>` : ''}
+        ${typeHtml}
+      </div>
+      ${stakeholdersHtml}
+      ${startDate ? `
+        <div class="task-date">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>${startDate}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  if (onClick) {
+    card.addEventListener('click', () => onClick(task));
+    card.classList.add('clickable');
+  }
+
+  return card;
+}
+
+/**
+ * Format task date
+ * @param {string} dateStr - ISO date string
+ * @returns {string} Formatted date
+ */
+function formatTaskDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Get priority color (local version)
+ * @param {string} priority - Priority value
+ * @returns {string} Color hex code
+ */
+function getPriorityColorLocal(priority) {
+  const priorityLower = (priority || '').toLowerCase();
+
+  if (priorityLower === 'alta' || priorityLower === 'high') {
+    return '#ef4444'; // Red
+  }
+  if (priorityLower === 'mit' || priorityLower === 'média' || priorityLower === 'medium') {
+    return '#f59e0b'; // Orange/Yellow
+  }
+  if (priorityLower === 'baixa' || priorityLower === 'low') {
+    return '#22c55e'; // Green
+  }
+
+  return '#6b7280'; // Gray default
+}
+
+/**
+ * Get status color (local version)
+ * @param {string} status - Status value
+ * @returns {string} Color hex code
+ */
+function getStatusColorLocal(status) {
+  const statusLower = (status || '').toLowerCase();
+
+  if (statusLower.includes('andamento') || statusLower.includes('progress')) {
+    return '#3b82f6'; // Blue
+  }
+  if (statusLower.includes('testes') || statusLower.includes('revisão') || statusLower.includes('review')) {
+    return '#8b5cf6'; // Purple
+  }
+  if (statusLower.includes('backlog') || statusLower.includes('not')) {
+    return '#6b7280'; // Gray
+  }
+  if (statusLower.includes('feature')) {
+    return '#10b981'; // Emerald
+  }
+
+  return '#6b7280'; // Gray default
 }
