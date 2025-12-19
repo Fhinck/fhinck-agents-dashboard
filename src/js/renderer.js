@@ -341,13 +341,14 @@ export function renderAgents(agents) {
 
   const agentsArray = [...agents.values()];
 
-  // Find central agent (orchestrator, master, or first agent)
+  // Find central agent - fhinck-master-protocol é sempre o orquestrador central
   const orchestratorIndex = agentsArray.findIndex(a =>
+    a.id === 'fhinck-master-protocol' ||
+    a.id.toLowerCase() === 'fhinck-master-protocol' ||
+    a.name?.toLowerCase() === 'fhinck-master-protocol' ||
     a.id === 'orchestrator' ||
-    a.id.toLowerCase().includes('master') ||
-    a.id.toLowerCase().includes('orchestrator') ||
-    a.name?.toLowerCase().includes('master') ||
-    a.name?.toLowerCase().includes('orchestrator')
+    a.id.toLowerCase().includes('master-protocol') ||
+    a.name?.toLowerCase().includes('master-protocol')
   );
 
   let orchestrator = null;
