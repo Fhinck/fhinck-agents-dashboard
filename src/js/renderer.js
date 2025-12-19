@@ -53,7 +53,7 @@ const ICONS = {
 // State
 let focusedAgentId = null;
 let rendererInstance = null;
-let currentZoom = 1;
+let currentZoom = 0.75; // Default zoom out for better spacing
 let currentPanX = 0;
 let currentPanY = 0;
 
@@ -76,9 +76,10 @@ let canvasArea = null;
 const ZOOM_CONFIG = {
   scale: 2.5,           // Zoom level when focused (mais zoom)
   transitionDuration: 1200,
-  minZoom: 0.5,
+  minZoom: 0.4,         // Allow more zoom out
   maxZoom: 3,
-  zoomStep: 0.25
+  zoomStep: 0.1,        // Finer zoom steps
+  defaultZoom: 0.75     // Default zoom level
 };
 
 /**
@@ -99,6 +100,11 @@ export function initRenderer() {
 
   // Initialize pan controls
   initPanControls();
+
+  // Apply default zoom
+  currentZoom = ZOOM_CONFIG.defaultZoom;
+  applyTransform();
+  updateZoomDisplay();
 
   rendererInstance = {
     resetAllStates
@@ -272,7 +278,7 @@ function applyManualZoom() {
  * Reset manual zoom and pan
  */
 function resetManualZoom() {
-  currentZoom = 1;
+  currentZoom = ZOOM_CONFIG.defaultZoom;
   currentPanX = 0;
   currentPanY = 0;
   applyTransform();
@@ -317,7 +323,7 @@ export function centerView() {
  * Fit all agents in view
  */
 export function fitToView() {
-  currentZoom = 1;
+  currentZoom = ZOOM_CONFIG.defaultZoom;
   currentPanX = 0;
   currentPanY = 0;
   applyTransform();
@@ -330,6 +336,45 @@ export function fitToView() {
  */
 export function getRenderer() {
   return rendererInstance;
+}
+
+/**
+ * Calculate dynamic layout for agents based on container size
+ * Returns positions for multiple rings if needed to maintain spacing
+ * @param {number} agentCount - Number of agents to position
+ * @param {HTMLElement} container - The container element
+ * @param {Object} center - Center position {x, y} as percentages
+ * @returns {Array} Array of positions {x, y}
+ */
+function calculateAgentPositions(agentCount, container, center) {
+  if (agentCount <= 0) return [];
+
+  const positions = [];
+
+  // Spiral configuration - each agent at slightly different distance
+  const minRadius = 0.22;  // Starting distance from center
+  const maxRadius = 0.46;  // Maximum distance from center
+  const radiusRange = maxRadius - minRadius;
+
+  // Golden angle for optimal distribution (avoids clustering)
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
+
+  for (let i = 0; i < agentCount; i++) {
+    // Calculate radius - increases with each agent (spiral pattern)
+    // Using square root for more even visual distribution
+    const t = i / Math.max(1, agentCount - 1);
+    const radius = minRadius + (radiusRange * Math.sqrt(t));
+
+    // Calculate angle using golden angle for best spacing
+    const angle = i * goldenAngle - Math.PI / 2; // Start from top
+
+    positions.push({
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius
+    });
+  }
+
+  return positions;
 }
 
 /**
@@ -379,14 +424,13 @@ export function renderAgents(agents) {
     agentsContainer.appendChild(element);
   }
 
-  // Render other agents in a circle around the Orchestrator
-  const radius = 0.35; // Distance from center
+  // Render other agents in circles around the Orchestrator
+  // Calculate dynamic positions based on container size and agent count
+  const center = { x: centerX, y: centerY };
+  const positions = calculateAgentPositions(otherAgents.length, agentsContainer, center);
+
   otherAgents.forEach((agent, index) => {
-    const angle = (2 * Math.PI * index / otherAgents.length) - Math.PI / 2; // Start from top
-    const position = {
-      x: centerX + Math.cos(angle) * radius,
-      y: centerY + Math.sin(angle) * radius
-    };
+    const position = positions[index] || { x: centerX, y: centerY + 0.35 };
     agentPositions.set(agent.id, position);
     const element = createAgentElement(agent, position);
     agentsContainer.appendChild(element);

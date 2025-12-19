@@ -60,6 +60,9 @@ async function init() {
     // Set up window resize handler
     setupResizeHandler();
 
+    // Set up sidebar resize handle
+    setupSidebarResize();
+
     // Initialize clock
     initClock();
 
@@ -442,6 +445,72 @@ function setupResizeHandler() {
       }
     }, 250);
   });
+}
+
+/**
+ * Setup sidebar resize functionality
+ * Allows dragging to resize the history sidebar
+ */
+function setupSidebarResize() {
+  const sidebar = document.getElementById('history-sidebar');
+  const handle = document.getElementById('sidebar-resize-handle');
+
+  if (!sidebar || !handle) return;
+
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  const minWidth = 280;
+  const maxWidth = 800;
+
+  handle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = sidebar.offsetWidth;
+
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    // Calculate new width (sidebar is on the right, so we subtract)
+    const deltaX = startX - e.clientX;
+    let newWidth = startWidth + deltaX;
+
+    // Clamp to min/max
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+
+    sidebar.style.width = `${newWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      // Save width to localStorage
+      localStorage.setItem('sidebarWidth', sidebar.offsetWidth);
+    }
+  });
+
+  // Restore saved width
+  const savedWidth = localStorage.getItem('sidebarWidth');
+  if (savedWidth) {
+    const width = parseInt(savedWidth, 10);
+    if (width >= minWidth && width <= maxWidth) {
+      sidebar.style.width = `${width}px`;
+    }
+  }
+
+  console.log('📐 Sidebar resize initialized');
 }
 
 /**
