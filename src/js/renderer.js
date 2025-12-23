@@ -95,11 +95,18 @@ export function initRenderer() {
     return;
   }
 
+  // Setup SVG viewBox for percentage-based coordinates
+  connectionsLayer.setAttribute('viewBox', '0 0 100 100');
+  connectionsLayer.setAttribute('preserveAspectRatio', 'none');
+
   // Initialize zoom controls
   initZoomControls();
 
   // Initialize pan controls
   initPanControls();
+
+  // Initialize resize handler
+  initResizeHandler();
 
   // Apply default zoom
   currentZoom = ZOOM_CONFIG.defaultZoom;
@@ -107,10 +114,59 @@ export function initRenderer() {
   updateZoomDisplay();
 
   rendererInstance = {
-    resetAllStates
+    resetAllStates,
+    redraw: () => redrawConnections()
   };
 
   console.log('🎨 Renderer initialized');
+}
+
+// Store current agents for redraw
+let currentAgentsMap = null;
+let currentOrchestrator = null;
+let currentOtherAgents = [];
+
+/**
+ * Initialize resize handler for redrawing on window resize
+ */
+function initResizeHandler() {
+  let resizeTimeout;
+
+  window.addEventListener('resize', () => {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      console.log('📐 Window resized, redrawing...');
+      redrawConnections();
+    }, 100);
+  });
+
+  // Also listen for sidebar collapse which changes canvas size
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    const observer = new MutationObserver(() => {
+      setTimeout(redrawConnections, 300); // Wait for transition
+    });
+    observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Listen for history sidebar resize
+  const historySidebar = document.getElementById('history-sidebar');
+  if (historySidebar) {
+    const observer = new MutationObserver(() => {
+      setTimeout(redrawConnections, 100);
+    });
+    observer.observe(historySidebar, { attributes: true, attributeFilter: ['style'] });
+  }
+}
+
+/**
+ * Redraw connections without re-rendering agents
+ */
+function redrawConnections() {
+  if (currentOrchestrator && currentOtherAgents.length > 0) {
+    renderConnections(currentAgentsMap, currentOrchestrator, currentOtherAgents);
+  }
 }
 
 /**
@@ -436,6 +492,11 @@ export function renderAgents(agents) {
     agentsContainer.appendChild(element);
   });
 
+  // Store for redraw on resize
+  currentAgentsMap = agents;
+  currentOrchestrator = orchestrator;
+  currentOtherAgents = otherAgents;
+
   // Render connections (each agent connects only to Orchestrator)
   renderConnections(agents, orchestrator, otherAgents);
 
@@ -596,6 +657,7 @@ function calculateNetworkPositions(count) {
 /**
  * Render connection lines between agents
  * Each agent connects only to the Orchestrator (hub-and-spoke layout)
+ * Uses percentage-based coordinates (0-100) matching the SVG viewBox
  * @param {Map} agents - Map of agents
  * @param {Object} orchestrator - The Orchestrator agent (center)
  * @param {Array} otherAgents - All other agents
@@ -609,18 +671,17 @@ export function renderConnections(agents, orchestrator, otherAgents) {
   // Need at least orchestrator and one other agent
   if (!orchestrator || otherAgents.length === 0) return;
 
-  const rect = connectionsLayer.getBoundingClientRect();
-
-  // Orchestrator position (center)
+  // Orchestrator position (center) - convert from 0-1 to 0-100 for viewBox
   const centerPos = agentPositions.get(orchestrator.id) || { x: 0.5, y: 0.5 };
-  const centerX = centerPos.x * rect.width;
-  const centerY = centerPos.y * rect.height;
+  const centerX = centerPos.x * 100;
+  const centerY = centerPos.y * 100;
 
   // Connect each agent to the Orchestrator only
   otherAgents.forEach((agent) => {
     const agentPos = agentPositions.get(agent.id) || { x: 0.5, y: 0.5 };
-    const agentX = agentPos.x * rect.width;
-    const agentY = agentPos.y * rect.height;
+    // Convert from 0-1 to 0-100 for viewBox
+    const agentX = agentPos.x * 100;
+    const agentY = agentPos.y * 100;
 
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', agentX);

@@ -270,6 +270,33 @@
       <!-- Dynamically filled when agent is in focus -->
     </div>
 
+    <!-- Modal de Detalhe da Tarefa -->
+    <div class="task-detail-modal" id="task-detail-modal">
+      <div class="task-detail-backdrop" id="task-detail-backdrop"></div>
+      <div class="task-detail-content">
+        <div class="task-detail-header">
+          <div class="task-detail-agent">
+            <div class="task-detail-avatar" id="task-detail-avatar">AG</div>
+            <div class="task-detail-agent-info">
+              <span class="task-detail-agent-name" id="task-detail-agent-name">Agente</span>
+              <span class="task-detail-timestamp" id="task-detail-timestamp">agora</span>
+            </div>
+          </div>
+          <button type="button" class="task-detail-close" id="task-detail-close" title="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="task-detail-body">
+          <div class="task-detail-action" id="task-detail-action">Iniciando tarefa</div>
+          <div class="task-detail-text" id="task-detail-text">
+            <!-- Prompt completo aqui -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Zoom Controls -->
     <div class="zoom-controls" id="zoom-controls">
       <button type="button" class="zoom-btn" id="zoom-in" title="Zoom In">

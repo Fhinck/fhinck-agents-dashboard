@@ -18,6 +18,16 @@ let historySidebar = null;
 let historyContent = null;
 let historyEmpty = null;
 
+// Modal References
+let taskDetailModal = null;
+let taskDetailBackdrop = null;
+let taskDetailClose = null;
+let taskDetailAvatar = null;
+let taskDetailAgentName = null;
+let taskDetailTimestamp = null;
+let taskDetailAction = null;
+let taskDetailText = null;
+
 // Configuração
 const MAX_HISTORY_ITEMS_PER_AGENT = 10;
 
@@ -33,6 +43,30 @@ export function initTaskManager() {
   historySidebar = document.getElementById('history-sidebar');
   historyContent = document.getElementById('history-content');
   historyEmpty = document.getElementById('history-empty');
+
+  // Cache Modal elements
+  taskDetailModal = document.getElementById('task-detail-modal');
+  taskDetailBackdrop = document.getElementById('task-detail-backdrop');
+  taskDetailClose = document.getElementById('task-detail-close');
+  taskDetailAvatar = document.getElementById('task-detail-avatar');
+  taskDetailAgentName = document.getElementById('task-detail-agent-name');
+  taskDetailTimestamp = document.getElementById('task-detail-timestamp');
+  taskDetailAction = document.getElementById('task-detail-action');
+  taskDetailText = document.getElementById('task-detail-text');
+
+  // Setup modal event listeners
+  if (taskDetailBackdrop) {
+    taskDetailBackdrop.addEventListener('click', closeTaskDetailModal);
+  }
+  if (taskDetailClose) {
+    taskDetailClose.addEventListener('click', closeTaskDetailModal);
+  }
+  // ESC to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && taskDetailModal?.classList.contains('visible')) {
+      closeTaskDetailModal();
+    }
+  });
 
   isInitialized = true;
   console.log('📋 Task Manager initialized');
@@ -125,9 +159,10 @@ function extractTaskSummary(task) {
  * @param {string} params.agentColor - Cor do agente
  * @param {string} params.action - Ação realizada (read, write, execute, call, etc)
  * @param {string} params.detail - Detalhe da ação (nome do arquivo, comando, etc)
+ * @param {string} params.fullPrompt - Prompt/descrição completa da tarefa
  * @param {string} params.status - Status do agente (working, idle)
  */
-export function addHistoryItem({ agentId, agentName, agentColor, action, detail, status = 'working' }) {
+export function addHistoryItem({ agentId, agentName, agentColor, action, detail, fullPrompt, status = 'working' }) {
   if (!agentHistories.has(agentId)) {
     agentHistories.set(agentId, {
       name: agentName,
@@ -144,8 +179,10 @@ export function addHistoryItem({ agentId, agentName, agentColor, action, detail,
 
   // Adiciona o novo item no início
   agentData.items.unshift({
+    id: Date.now() + Math.random(), // ID único para o item
     action,
     detail,
+    fullPrompt: fullPrompt || detail, // Guarda prompt completo
     timestamp: new Date()
   });
 
@@ -282,7 +319,7 @@ function createAgentGroup(agentId, agentData) {
 
   // Renderiza os itens
   const itemsContainer = group.querySelector('.history-items');
-  renderHistoryItems(itemsContainer, agentData.items);
+  renderHistoryItems(itemsContainer, agentData.items, agentData);
 
   return group;
 }
@@ -304,7 +341,7 @@ function updateAgentGroup(group, agentData) {
   // Atualiza itens
   const itemsContainer = group.querySelector('.history-items');
   if (itemsContainer) {
-    renderHistoryItems(itemsContainer, agentData.items);
+    renderHistoryItems(itemsContainer, agentData.items, agentData);
   }
 }
 
@@ -312,20 +349,139 @@ function updateAgentGroup(group, agentData) {
  * Renderiza os itens de histórico
  * @param {HTMLElement} container - Container dos itens
  * @param {Array} items - Array de itens
+ * @param {Object} agentData - Dados do agente (nome, cor)
  */
-function renderHistoryItems(container, items) {
+function renderHistoryItems(container, items, agentData) {
   container.innerHTML = items.map(item => `
-    <div class="history-item">
+    <div class="history-item ${item.fullPrompt ? 'clickable' : ''}"
+         data-item-id="${item.id}"
+         data-agent-name="${agentData?.name || 'Agente'}"
+         data-agent-color="${agentData?.color || '#FF6B35'}"
+         data-action="${item.action || ''}"
+         data-detail="${escapeHtml(item.detail || '')}"
+         data-full-prompt="${escapeHtml(item.fullPrompt || item.detail || '')}"
+         data-timestamp="${item.timestamp ? new Date(item.timestamp).toISOString() : ''}">
       <div class="history-item-icon ${getActionType(item.action)}">
         ${getActionIcon(item.action)}
       </div>
       <div class="history-item-content">
         <div class="history-item-action">${formatAction(item.action)}</div>
-        <div class="history-item-detail" title="${item.detail || ''}">${item.detail || ''}</div>
+        <div class="history-item-detail">${item.detail || ''}</div>
       </div>
       <div class="history-item-time">${formatTime(item.timestamp)}</div>
     </div>
   `).join('');
+
+  // Add click handlers for items with full prompt
+  container.querySelectorAll('.history-item.clickable').forEach(el => {
+    el.addEventListener('click', () => {
+      openTaskDetailModal({
+        agentName: el.dataset.agentName,
+        agentColor: el.dataset.agentColor,
+        action: el.dataset.action,
+        fullPrompt: el.dataset.fullPrompt,
+        timestamp: el.dataset.timestamp
+      });
+    });
+  });
+}
+
+/**
+ * Escapa HTML para evitar XSS
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Abre o modal de detalhe da tarefa
+ */
+function openTaskDetailModal({ agentName, agentColor, action, fullPrompt, timestamp }) {
+  if (!taskDetailModal) return;
+
+  // Define avatar
+  const initials = (agentName || 'AG')
+    .split(/[-\s]/)
+    .map(w => w.charAt(0))
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  if (taskDetailAvatar) {
+    taskDetailAvatar.textContent = initials;
+    taskDetailAvatar.style.background = agentColor || '#FF6B35';
+  }
+
+  if (taskDetailAgentName) {
+    taskDetailAgentName.textContent = formatAgentName(agentName);
+  }
+
+  if (taskDetailTimestamp && timestamp) {
+    taskDetailTimestamp.textContent = formatTime(new Date(timestamp));
+  }
+
+  if (taskDetailAction) {
+    taskDetailAction.textContent = formatAction(action);
+  }
+
+  if (taskDetailText) {
+    // Renderiza o prompt com formatação básica de markdown
+    taskDetailText.innerHTML = formatPromptForDisplay(fullPrompt);
+  }
+
+  taskDetailModal.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Fecha o modal de detalhe
+ */
+function closeTaskDetailModal() {
+  if (!taskDetailModal) return;
+  taskDetailModal.classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+/**
+ * Formata o prompt para exibição no modal (suporte básico a markdown)
+ */
+function formatPromptForDisplay(prompt) {
+  if (!prompt) return '<span class="empty-prompt">Sem detalhes disponíveis</span>';
+
+  // Escapa HTML primeiro
+  let formatted = escapeHtml(prompt);
+
+  // Headers (# ## ###)
+  formatted = formatted.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+  formatted = formatted.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  formatted = formatted.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+
+  // Bold **text**
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic *text*
+  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Code blocks ```
+  formatted = formatted.replace(/```([^`]+)```/gs, '<pre><code>$1</code></pre>');
+
+  // Inline code `text`
+  formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Line breaks
+  formatted = formatted.replace(/\n/g, '<br>');
+
+  // List items (- item)
+  formatted = formatted.replace(/<br>- /g, '<br>• ');
+  formatted = formatted.replace(/^- /gm, '• ');
+
+  return formatted;
 }
 
 /**
@@ -452,6 +608,7 @@ export function processAgentEvent({ agentId, agentName, agentColor, event, task,
 
   let action = '';
   let detail = '';
+  let fullPrompt = '';
 
   switch (event) {
     case 'start':
@@ -459,30 +616,39 @@ export function processAgentEvent({ agentId, agentName, agentColor, event, task,
       action = agentAction || 'Iniciando tarefa';
       detail = actionDetail || extractTaskSummary(task);
 
+      // Guarda o prompt/task completo para o modal de detalhe
+      fullPrompt = prompt || task || actionDetail || '';
+
       // Atualiza a barra roxa com o campo 'prompt' (tarefa principal do time)
-      if (prompt) {
-        setMainTask(prompt, 10);
+      // Fallback: usa 'task' ou 'actionDetail' se 'prompt' não existir
+      const mainTaskContent = prompt || task || actionDetail;
+      if (mainTaskContent) {
+        setMainTask(mainTaskContent, 10);
       }
       break;
 
     case 'end':
       action = 'Tarefa concluída';
       detail = '';
+      fullPrompt = '';
       break;
 
     case 'tool_use':
       if (toolData) {
         action = formatToolAction(toolData.tool);
         detail = toolData.input || '';
+        fullPrompt = toolData.input || '';
       } else {
         action = 'Usando ferramenta';
         detail = '';
+        fullPrompt = '';
       }
       break;
 
     default:
       action = agentAction || event;
       detail = actionDetail || (task ? extractTaskSummary(task) : '');
+      fullPrompt = task || actionDetail || '';
   }
 
   addHistoryItem({
@@ -491,6 +657,7 @@ export function processAgentEvent({ agentId, agentName, agentColor, event, task,
     agentColor,
     action,
     detail,
+    fullPrompt,
     status
   });
 
