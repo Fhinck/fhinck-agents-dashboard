@@ -332,7 +332,9 @@ function updateEnhancedBadges(total, active) {
   const tasksBadge = document.getElementById('tasks-today');
   if (tasksBadge) {
     const valueEl = tasksBadge.querySelector('.badge-value');
+    const labelEl = tasksBadge.querySelector('.badge-label');
     if (valueEl) valueEl.textContent = tasksToday;
+    if (labelEl) labelEl.textContent = tasksToday === 1 ? 'Task Hoje' : 'Tasks Hoje';
   }
 
   // Also update legacy badges for compatibility

@@ -1,6 +1,6 @@
 /* ===================================
    TV Display Enhancements
-   Styles for TV/Large Screen Display
+   Light Theme for TV/Large Screens
    =================================== */
 
 /* ===================================
@@ -27,8 +27,14 @@
 }
 
 @keyframes logo-pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  0%, 100% {
+    opacity: 0.6;
+    stroke: var(--color-primary);
+  }
+  50% {
+    opacity: 1;
+    stroke: var(--color-primary-light);
+  }
 }
 
 /* ===================================
@@ -67,7 +73,7 @@
   gap: 6px;
   font-size: 10px;
   font-weight: 700;
-  color: #10B981;
+  color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 0.15em;
 }
@@ -75,10 +81,10 @@
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background: #10B981;
+  background: var(--color-primary);
   border-radius: 50%;
   animation: pulse-live 1.5s ease-in-out infinite;
-  box-shadow: 0 0 10px #10B981;
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
 }
 
 @keyframes pulse-live {
@@ -87,7 +93,7 @@
     opacity: 1;
   }
   50% {
-    transform: scale(1.2);
+    transform: scale(1.3);
     opacity: 0.7;
   }
 }
@@ -100,25 +106,25 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 10px 18px;
   font-size: 13px;
   font-weight: 500;
-  background: rgba(255, 107, 53, 0.08);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
   color: var(--color-text-secondary);
   transition: all var(--transition-medium);
 }
 
 .status-badge svg {
-  opacity: 0.7;
+  opacity: 0.8;
   flex-shrink: 0;
 }
 
 .badge-value {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-primary-light);
+  color: var(--color-primary);
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -130,14 +136,13 @@
 }
 
 .status-badge.active {
-  background: rgba(255, 107, 53, 0.15);
+  background: var(--hex-bg);
   border-color: var(--color-primary);
-  box-shadow: 0 0 20px rgba(255, 107, 53, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);
 }
 
 .status-badge.active .badge-value {
   color: var(--color-primary);
-  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
 }
 
 /* ===================================
@@ -156,8 +161,8 @@
 }
 
 .notification {
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid var(--color-border);
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-light);
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -166,7 +171,7 @@
   transform: translateX(120%);
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -201,7 +206,7 @@
 .notification-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--notification-color, var(--color-primary-light));
+  color: var(--notification-color, var(--color-primary));
   margin-bottom: 2px;
 }
 
@@ -233,11 +238,11 @@
 }
 
 .notification-agent-end {
-  border-left: 3px solid #10B981;
+  border-left: 3px solid var(--color-primary);
 }
 
 .notification-agent-end .notification-icon {
-  color: #10B981;
+  color: var(--color-primary);
 }
 
 /* ===================================
@@ -245,10 +250,10 @@
    =================================== */
 
 .connection-line {
-  stroke: rgba(255, 107, 53, 0.15);
-  stroke-width: 1.5;
+  stroke: rgba(255, 107, 53, 0.4);
+  stroke-width: 0.75;
   fill: none;
-  stroke-dasharray: 5, 5;
+  stroke-dasharray: 2, 4;
   animation: dash-flow 20s linear infinite;
 }
 
@@ -261,23 +266,11 @@
   stroke: var(--color-primary);
   stroke-width: 2;
   stroke-dasharray: none;
-  filter: drop-shadow(0 0 8px var(--color-primary));
-  animation: connection-pulse 1s ease-in-out infinite;
-}
-
-@keyframes connection-pulse {
-  0%, 100% {
-    stroke: rgba(255, 107, 53, 0.8);
-    filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.5));
-  }
-  50% {
-    stroke: var(--color-primary);
-    filter: drop-shadow(0 0 12px var(--color-primary));
-  }
+  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.3));
 }
 
 /* ===================================
-   Enhanced Agent Nodes
+   Enhanced Agent Nodes - TV Size
    =================================== */
 
 .agent-node {
@@ -289,65 +282,82 @@
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
-  width: 90px;
+  width: 100px;
 }
 
-.agent-node .agent-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%,
-    rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.25),
-    rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.08));
-  border: 2px solid var(--agent-color);
+.agent-node .agent-circle {
+  width: 60px;
+  height: 60px;
+  background: var(--agent-color, var(--color-primary));
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
   position: relative;
   flex-shrink: 0;
+  padding: 2px;
+}
+
+.agent-node .agent-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Inner white hexagon */
+.agent-node .agent-circle::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #FFFFFF;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  z-index: 0;
 }
 
 /* Idle breathing animation */
-.agent-node:not(.working):not(.focused) .agent-icon {
+.agent-node:not(.working):not(.focused):not(.speaking) .agent-circle {
   animation: agent-breathe 4s ease-in-out infinite;
 }
 
 @keyframes agent-breathe {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0),
-                0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
   50% {
-    box-shadow: 0 0 20px 3px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.25),
-                0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.15);
   }
 }
 
+.agent-node .agent-circle svg,
 .agent-node .agent-icon svg {
-  width: 22px;
-  height: 22px;
-  color: var(--agent-color);
+  width: 24px;
+  height: 24px;
+  color: var(--agent-color, var(--color-primary));
+  position: relative;
+  z-index: 1;
 }
 
 .agent-node .agent-initials {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--agent-color);
+  color: var(--agent-color, var(--color-primary));
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  text-shadow: 0 0 10px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.5);
+  position: relative;
+  z-index: 1;
 }
 
 .agent-node .agent-name {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-primary);
   text-align: center;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 8px;
   line-height: 1.3;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   word-break: break-word;
   -webkit-hyphens: auto;
   hyphens: auto;
@@ -360,10 +370,9 @@
 }
 
 /* Working state */
-.agent-node.working .agent-icon {
+.agent-node.working .agent-circle {
   animation: agent-working 1.5s ease-in-out infinite;
-  box-shadow: 0 0 30px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.6),
-              0 0 60px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.3);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
 }
 
 @keyframes agent-working {
@@ -372,7 +381,7 @@
     border-width: 2px;
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.06);
     border-width: 3px;
   }
 }
@@ -382,12 +391,12 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 66px;
-  height: 66px;
-  border-radius: 50%;
-  border: 2px dashed var(--agent-color);
-  animation: indicator-spin 4s linear infinite;
-  opacity: 0.5;
+  width: 75px;
+  height: 75px;
+  border: 2px dashed var(--agent-color, var(--color-primary));
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  animation: indicator-spin 5s linear infinite;
+  opacity: 0.4;
   transform: translate(-50%, -50%);
 }
 
@@ -397,40 +406,40 @@
 }
 
 /* Focused state */
-.agent-node.focused .agent-icon {
+.agent-node.focused .agent-circle {
   transform: scale(1.15);
-  box-shadow: 0 0 50px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.7);
+  box-shadow: 0 8px 32px rgba(255, 107, 53, 0.25);
 }
 
 /* Speaking animation */
-.agent-node.speaking .agent-icon {
-  animation: agent-speaking 0.4s ease-in-out infinite alternate;
+.agent-node.speaking .agent-circle {
+  animation: agent-speaking 1s ease-in-out infinite alternate;
 }
 
 @keyframes agent-speaking {
   from {
-    box-shadow: 0 0 25px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.5);
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
   }
   to {
-    box-shadow: 0 0 45px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.8);
+    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.5);
   }
 }
 
 /* Dimmed state */
 .agent-node.dimmed {
-  opacity: 0.25;
-  transform: translate(-50%, -50%) scale(0.85);
-  filter: grayscale(0.6);
+  opacity: 0.2;
+  transform: translate(-50%, -50%) scale(0.8);
+  filter: grayscale(0.7);
 }
 
 /* Hover effect */
-.agent-node:hover:not(.dimmed) .agent-icon {
-  transform: scale(1.08);
-  box-shadow: 0 0 25px rgba(var(--agent-r), var(--agent-g), var(--agent-b), 0.5);
+.agent-node:hover:not(.dimmed) .agent-circle {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(255, 107, 53, 0.2);
 }
 
 .agent-node:hover:not(.dimmed) .agent-name {
-  color: white;
+  color: var(--color-text-primary);
 }
 
 /* ===================================
@@ -448,8 +457,9 @@
     circle at var(--focus-x, 50%) var(--focus-y, 50%),
     transparent 0%,
     transparent 20%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.7) 100%
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.25) 70%,
+    rgba(0, 0, 0, 0.4) 100%
   );
   pointer-events: none;
   z-index: 5;
@@ -459,4 +469,291 @@
 @keyframes vignette-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ===================================
+   Activity Feed
+   =================================== */
+
+.activity-feed {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.activity-feed-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-light);
+  border-radius: 12px 12px 0 0;
+  font-weight: 600;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-feed-header svg {
+  color: var(--color-primary);
+}
+
+.activity-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background 0.2s ease;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item:hover {
+  background: var(--color-bg-light);
+}
+
+.activity-agent-name {
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.activity-task {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.activity-time {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+/* ===================================
+   TV Mode Specific Adjustments
+   =================================== */
+
+body.tv-mode {
+  --header-height: 80px;
+}
+
+body.tv-mode .dashboard-header {
+  height: var(--header-height);
+  padding: 0 40px;
+}
+
+body.tv-mode .dashboard-title {
+  font-size: 24px;
+}
+
+body.tv-mode .clock-time {
+  font-size: 32px;
+}
+
+body.tv-mode .clock-date {
+  font-size: 13px;
+}
+
+body.tv-mode .live-indicator {
+  font-size: 12px;
+}
+
+body.tv-mode .pulse-dot {
+  width: 10px;
+  height: 10px;
+}
+
+body.tv-mode .status-badge {
+  padding: 14px 24px;
+}
+
+body.tv-mode .badge-value {
+  font-size: 26px;
+}
+
+body.tv-mode .badge-label {
+  font-size: 12px;
+}
+
+body.tv-mode .agent-node {
+  width: 120px;
+}
+
+body.tv-mode .agent-node .agent-circle {
+  width: 75px;
+  height: 75px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+body.tv-mode .agent-node .agent-initials {
+  font-size: 22px;
+}
+
+body.tv-mode .agent-node .agent-circle svg {
+  width: 30px;
+  height: 30px;
+}
+
+body.tv-mode .agent-node .agent-name {
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+body.tv-mode .working-indicator {
+  width: 90px;
+  height: 90px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+/* ===================================
+   Large Screen Optimizations
+   =================================== */
+
+@media (min-width: 1920px) {
+  body.tv-mode .agent-node {
+    width: 140px;
+  }
+
+  body.tv-mode .agent-node .agent-circle {
+    width: 85px;
+    height: 85px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+
+  body.tv-mode .agent-node .agent-initials {
+    font-size: 26px;
+  }
+
+  body.tv-mode .agent-node .agent-circle svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  body.tv-mode .agent-node .agent-name {
+    font-size: 14px;
+  }
+
+  body.tv-mode .working-indicator {
+    width: 100px;
+    height: 100px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+
+  body.tv-mode .clock-time {
+    font-size: 40px;
+  }
+
+  body.tv-mode .badge-value {
+    font-size: 32px;
+  }
+}
+
+@media (min-width: 2560px) {
+  body.tv-mode .agent-node {
+    width: 160px;
+  }
+
+  body.tv-mode .agent-node .agent-circle {
+    width: 100px;
+    height: 100px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+
+  body.tv-mode .agent-node .agent-initials {
+    font-size: 30px;
+  }
+
+  body.tv-mode .agent-node .agent-circle svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  body.tv-mode .agent-node .agent-name {
+    font-size: 16px;
+  }
+
+  body.tv-mode .working-indicator {
+    width: 120px;
+    height: 120px;
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+
+  body.tv-mode .clock-time {
+    font-size: 48px;
+  }
+
+  body.tv-mode .badge-value {
+    font-size: 38px;
+  }
+
+  body.tv-mode .history-sidebar {
+    width: 650px;
+  }
+
+  body.tv-mode .history-agent-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+
+  body.tv-mode .history-agent-name {
+    font-size: 22px;
+  }
+
+  body.tv-mode .history-item-detail {
+    font-size: 18px;
+  }
+}
+
+/* ===================================
+   Decorative Elements
+   =================================== */
+
+.hex-decoration {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.03;
+  z-index: 0;
+}
+
+.hex-decoration-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  left: 5%;
+  border: 2px solid var(--color-primary);
+  border-radius: 50px;
+  animation: hex-float 10s ease-in-out infinite;
+}
+
+.hex-decoration-2 {
+  width: 150px;
+  height: 150px;
+  bottom: 15%;
+  right: 8%;
+  border: 2px solid var(--color-primary);
+  border-radius: 40px;
+  animation: hex-float 12s ease-in-out infinite reverse;
+}
+
+.hex-decoration-3 {
+  width: 100px;
+  height: 100px;
+  top: 60%;
+  left: 3%;
+  border: 2px solid var(--color-primary);
+  border-radius: 30px;
+  animation: hex-float 8s ease-in-out infinite 2s;
+}
+
+@keyframes hex-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.03;
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+    opacity: 0.06;
+  }
 }
